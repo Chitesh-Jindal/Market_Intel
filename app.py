@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.title("EquiLens")
+st.title("Market Intel")
 st.write("AI-Powered Indian Stock Intelligence")
 
 stock = st.text_input("Enter stock symbol", "RELIANCE.NS")
