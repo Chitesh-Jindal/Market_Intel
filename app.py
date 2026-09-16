@@ -9,4 +9,5 @@ if st.button("Analyze"):
     data = yf.download(stock, period="1mo")
     #1mo means 1 month of data
     st.write(data)
+    st.line_chart(data["Close"])
 
