@@ -26,14 +26,18 @@ if st.button("Analyze"):
         price_range = highest_price - lowest_price
         total_volume=data["Volume"].sum().item()
         trading_days = len(data)
+        price_change = latest_price - data["Close"].iloc[0].item()
         st.write("Trading Days:", trading_days)
-        
-        st.write("Average Daily Return: ",round(average_return,2),"%")
-        st.write("Daily Volatility: ",round(volatility,2),"%")
-        st.write("Highest Closing Price: ",round(highest_price,2))
-        st.write("Lowest Closing Price: ",round(lowest_price,2))
+
+        st.write("Price Change:", round(price_change, 2))
         st.write("Latest Closing Price: ",round(latest_price,2))
         st.write("Closing Price Range:", round(price_range, 2))
+        st.write("Highest Closing Price: ",round(highest_price,2))
+        st.write("Lowest Closing Price: ",round(lowest_price,2))
+        st.write("Average Daily Return: ",round(average_return,2),"%")
+        st.write("Daily Volatility: ",round(volatility,2),"%")
+        
+        
         st.write("Total Trading Volume:", total_volume)
         st.line_chart(data["Close"])
 
