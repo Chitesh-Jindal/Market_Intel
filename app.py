@@ -27,13 +27,17 @@ if st.button("Analyze"):
         total_volume=data["Volume"].sum().item()
         trading_days = len(data)
         price_change = latest_price - data["Close"].iloc[0].item()
+        price_change_percent = (price_change / data["Close"].iloc[0].item()) * 100
+
         st.write("Trading Days:", trading_days)
 
-        st.write("Price Change:", round(price_change, 2))
         st.write("Latest Closing Price: ",round(latest_price,2))
-        st.write("Closing Price Range:", round(price_range, 2))
+        st.write("Price Change:", round(price_change, 2))
         st.write("Highest Closing Price: ",round(highest_price,2))
         st.write("Lowest Closing Price: ",round(lowest_price,2))
+        st.write("Closing Price Range:", round(price_range, 2))
+        st.write("Price Change (%):", round(price_change_percent, 2), "%")
+        
         st.write("Average Daily Return: ",round(average_return,2),"%")
         st.write("Daily Volatility: ",round(volatility,2),"%")
         
