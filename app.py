@@ -18,6 +18,7 @@ if st.button("Analyze"):
         st.write("Missing Values")
         st.write(missing)
 
+        st.divider()
         st.subheader("Analysis for " + stock)
         
         data["Daily_Return"]=data["Close"].pct_change()*100
