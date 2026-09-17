@@ -19,7 +19,9 @@ if st.button("Analyze"):
         st.write(missing)
         data["Daily_Return"]=data["Close"].pct_change()*100
         average_return = data["Daily_Return"].mean()
+        volatility=data["Daily_Return"].std()
 
         st.write("Average Daily Return: ",round(average_return,2),"%")
+        st.write("Daily Volatility: ",round(volatility,2),"%")
         st.line_chart(data["Close"])
 
