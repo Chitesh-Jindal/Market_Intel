@@ -12,6 +12,7 @@ if st.button("Analyze"):
         #if the stock entered is invalid
         st.error("No data found for this stock")
     else:
+        st.subheader("Historical Data")
         st.write(data)
         missing = data.isnull().sum()
         #checking values in data set that are missing
@@ -20,7 +21,8 @@ if st.button("Analyze"):
 
         st.divider()
         st.subheader("Analysis for " + stock)
-        
+
+        st.write("Key Statistics")
         data["Daily_Return"]=data["Close"].pct_change()*100
         average_return = data["Daily_Return"].mean()
         volatility=data["Daily_Return"].std()
