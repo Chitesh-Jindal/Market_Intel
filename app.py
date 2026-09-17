@@ -30,7 +30,7 @@ if st.button("Analyze"):
         st.write("Daily Volatility: ",round(volatility,2),"%")
         st.write("Highest Closing Price: ",round(highest_price,2))
         st.write("Lowest Closing Price: ",round(lowest_price,2))
-        st.write("Latest Closing Price: ",round(latest_price,2))
+        st.metric("Latest Closing Price: ",round(latest_price,2))
         st.write("Closing Price Range:", round(price_range, 2))
         st.write("Total Trading Volume:", total_volume)
         st.line_chart(data["Close"])
