@@ -18,9 +18,11 @@ if st.button("Analyze"):
         st.write("Missing Values")
         st.write(missing)
         data["Daily_Return"]=data["Close"].pct_change()*100
+        average_return = data["Daily_Return"].mean()
 
         st.write("Daily Return (%)")
         st.write(data["Daily_Return"])
-        
+
+        st.write(average_return)
         st.line_chart(data["Close"])
 
