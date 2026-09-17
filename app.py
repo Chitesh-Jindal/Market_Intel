@@ -12,5 +12,9 @@ if st.button("Analyze"):
         st.error("No data found for this stock")
     else:
         st.write(data)
+        missing = data.isnull().sum()
+        #checking values in data set that are missing
+        st.write("Missing Values")
+        st.write(missing)
         st.line_chart(data["Close"])
 
