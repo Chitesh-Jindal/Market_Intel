@@ -10,7 +10,7 @@ if st.button("Analyze"):
     #1mo means 1 month of data
     if data.empty:
         st.error("No data found for this stock")
-    else
+    else:
         st.write(data)
         st.line_chart(data["Close"])
 
