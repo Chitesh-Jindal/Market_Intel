@@ -23,11 +23,13 @@ if st.button("Analyze"):
         highest_price=data["Close"].max().item()
         lowest_price=data["Close"].min().item()
         latest_price=data["Close"].iloc[-1].item()
-
+        price_range = highest_price - lowest_price
+        
         st.write("Average Daily Return: ",round(average_return,2),"%")
         st.write("Daily Volatility: ",round(volatility,2),"%")
         st.write("Highest Closing Price: ",round(highest_price,2))
         st.write("Lowest Closing Price: ",round(lowest_price,2))
-        st.write("latest Closing Price: ",round(latest_price,2))
+        st.write("Latest Closing Price: ",round(latest_price,2))
+        st.write("Closing Price Range:", round(price_range, 2))
         st.line_chart(data["Close"])
 
