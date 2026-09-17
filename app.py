@@ -21,9 +21,11 @@ if st.button("Analyze"):
         average_return = data["Daily_Return"].mean()
         volatility=data["Daily_Return"].std()
         highest_price=data["Close"].max().item()
+        lowest_price=data["Close"].min().item()
 
         st.write("Average Daily Return: ",round(average_return,2),"%")
         st.write("Daily Volatility: ",round(volatility,2),"%")
         st.write("Highest Closing Price: ",round(highest_price,2))
+        st.write("Lowest Closing Price: ",round(lowest_price,2))
         st.line_chart(data["Close"])
 
