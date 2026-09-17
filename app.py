@@ -20,6 +20,6 @@ if st.button("Analyze"):
         data["Daily_Return"]=data["Close"].pct_change()*100
         average_return = data["Daily_Return"].mean()
 
-        st.write("Average Daily Return: ",average_return,"%")
+        st.write("Average Daily Return: ",round(average_return,2),"%")
         st.line_chart(data["Close"])
 
