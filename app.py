@@ -25,6 +25,8 @@ if st.button("Analyze"):
         latest_price=data["Close"].iloc[-1].item()
         price_range = highest_price - lowest_price
         total_volume=data["Volume"].sum().item()
+        trading_days = len(data)
+        st.write("Trading Days:", trading_days)
         
         st.write("Average Daily Return: ",round(average_return,2),"%")
         st.write("Daily Volatility: ",round(volatility,2),"%")
