@@ -47,5 +47,6 @@ if st.button("Analyze"):
         
         
         st.write("Total Trading Volume:", total_volume)
+        st.divider()
         st.line_chart(data["Close"])
 
