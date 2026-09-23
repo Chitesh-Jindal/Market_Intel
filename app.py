@@ -12,6 +12,8 @@ if st.button("Analyze"):
         #if the stock entered is invalid
         st.error("No data found for this stock")
     else:
+        data["Daily_Return (%)"]=data["Close"].pct_change()*100
+        data["SMA_10"]=data["Close"].rolling(window=10).mean()
         st.subheader("Historical Data")
         st.write(data)
         missing = data.isnull().sum()
@@ -23,9 +25,9 @@ if st.button("Analyze"):
         st.subheader("Analysis for " + stock)
 
         st.caption("Key Statistics")
-        data["Daily_Return"]=data["Close"].pct_change()*100
-        average_return = data["Daily_Return"].mean()
-        volatility=data["Daily_Return"].std()
+        
+        average_return = data["Daily_Return (%)"].mean()
+        volatility=data["Daily_Return (%)"].std()
         highest_price=data["Close"].max().item()
         lowest_price=data["Close"].min().item()
         latest_price=data["Close"].iloc[-1].item()
@@ -50,5 +52,5 @@ if st.button("Analyze"):
         
         st.write("Total Trading Volume:", total_volume)
         st.divider()
-        st.line_chart(data["Close"])
+        st.line_chart(data[["Close","SMA_10"]])
 
