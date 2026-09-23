@@ -1,6 +1,8 @@
 import streamlit as st
 import yfinance as yf;
 import pandas as pd
+from ta.momentum import RSIIndicator
+
 st.title("Market Intel")
 st.write("AI-Powered Indian Stock Intelligence")
 
@@ -16,9 +18,16 @@ if st.button("Analyze"):
         st.error("No data found for this stock")
     else:
         data["Daily_Return (%)"]=data["Close"].pct_change()*100
+        
         data["SMA_10"]=data["Close"].rolling(window=10).mean()
+        //SIMPLE MOVING AVERAGE
         data["SMA_20"]=data["Close"].rolling(window=20).mean()
         data["SMA_Spread"]=data["SMA_10"]-data["SMA_20"]
+
+        //RELATIVE STRENGTH INDEX measures how strongly the price is going upwards or downwards
+        //ranges from 0 to 100
+        rsi_indicator= RSIIndicator(close=data["Close"], window=14)
+        data["RSI"]=rsi_indicator.rsi()
         st.subheader("Historical Data")
         st.write(data)
         missing = data.isnull().sum()
