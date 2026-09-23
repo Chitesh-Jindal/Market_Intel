@@ -1,5 +1,6 @@
 import streamlit as st
 import yfinance as yf;
+import pandas as pd
 st.title("Market Intel")
 st.write("AI-Powered Indian Stock Intelligence")
 
@@ -7,7 +8,8 @@ stock = st.text_input("Enter stock symbol", "RELIANCE.NS")
 
 if st.button("Analyze"):
     data = yf.download(stock, period="1mo")
-    st.write(data.columns)
+    if isinstance(data.columns, pd.MultiIndex):
+        data.columns = data.columns.get_level_values(0)
     #1mo means 1 month of data
     if data.empty:
         #if the stock entered is invalid
