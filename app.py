@@ -18,6 +18,7 @@ if st.button("Analyze"):
         data["Daily_Return (%)"]=data["Close"].pct_change()*100
         data["SMA_10"]=data["Close"].rolling(window=10).mean()
         data["SMA_20"]=data["Close"].rolling(window=20).mean()
+        data["SMA_Spread"]=data["SMA_10"]-data["SMA_20"]
         st.subheader("Historical Data")
         st.write(data)
         missing = data.isnull().sum()
