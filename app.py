@@ -7,7 +7,7 @@ st.write("AI-Powered Indian Stock Intelligence")
 stock = st.text_input("Enter stock symbol", "RELIANCE.NS")
 
 if st.button("Analyze"):
-    data = yf.download(stock, period="1mo")
+    data = yf.download(stock, period="3mo")
     if isinstance(data.columns, pd.MultiIndex):
         data.columns = data.columns.get_level_values(0)
     #1mo means 1 month of data
