@@ -17,6 +17,7 @@ if st.button("Analyze"):
     else:
         data["Daily_Return (%)"]=data["Close"].pct_change()*100
         data["SMA_10"]=data["Close"].rolling(window=10).mean()
+        data["SMA_20"]=data["Close"].rolling(window=20).mean()
         st.subheader("Historical Data")
         st.write(data)
         missing = data.isnull().sum()
@@ -55,5 +56,5 @@ if st.button("Analyze"):
         
         st.write("Total Trading Volume:", total_volume)
         st.divider()
-        st.line_chart(data[["Close", "SMA_10"]])
+        st.line_chart(data[["Close", "SMA_10", "SMA_20"]])
 
