@@ -7,6 +7,7 @@ stock = st.text_input("Enter stock symbol", "RELIANCE.NS")
 
 if st.button("Analyze"):
     data = yf.download(stock, period="1mo")
+    st.write(data.columns)
     #1mo means 1 month of data
     if data.empty:
         #if the stock entered is invalid
