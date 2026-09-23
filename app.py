@@ -20,12 +20,12 @@ if st.button("Analyze"):
         data["Daily_Return (%)"]=data["Close"].pct_change()*100
         
         data["SMA_10"]=data["Close"].rolling(window=10).mean()
-        //SIMPLE MOVING AVERAGE
+        #SIMPLE MOVING AVERAGE
         data["SMA_20"]=data["Close"].rolling(window=20).mean()
         data["SMA_Spread"]=data["SMA_10"]-data["SMA_20"]
 
-        //RELATIVE STRENGTH INDEX measures how strongly the price is going upwards or downwards
-        //ranges from 0 to 100
+        #RELATIVE STRENGTH INDEX measures how strongly the price is going upwards or downwards
+        #ranges from 0 to 100
         rsi_indicator= RSIIndicator(close=data["Close"], window=14)
         data["RSI"]=rsi_indicator.rsi()
         st.subheader("Historical Data")
