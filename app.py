@@ -19,15 +19,6 @@ if st.button("Analyze"):
     else:
         data["Daily_Return (%)"]=data["Close"].pct_change()*100
         
-        data["SMA_10"]=data["Close"].rolling(window=10).mean()
-        #SIMPLE MOVING AVERAGE
-        data["SMA_20"]=data["Close"].rolling(window=20).mean()
-        data["SMA_Spread"]=data["SMA_10"]-data["SMA_20"]
-
-        #RELATIVE STRENGTH INDEX measures how strongly the price is going upwards or downwards
-        #ranges from 0 to 100
-        rsi_indicator= RSIIndicator(close=data["Close"], window=14)
-        data["RSI"]=rsi_indicator.rsi()
         st.subheader("Historical Data")
         st.write(data)
         missing = data.isnull().sum()
@@ -66,12 +57,30 @@ if st.button("Analyze"):
         
         st.write("Total Trading Volume:", total_volume)
         st.divider()
-        st.line_chart(data[["Close", "SMA_10", "SMA_20"]])
+
+        data["SMA_10"]=data["Close"].rolling(window=10).mean()
+        #SIMPLE MOVING AVERAGE
+        data["SMA_20"]=data["Close"].rolling(window=20).mean()
+        data["SMA_Spread"]=data["SMA_10"]-data["SMA_20"]
+
+        #RELATIVE STRENGTH INDEX measures how strongly the price is going upwards or downwards
+        #ranges from 0 to 100
+        rsi_indicator= RSIIndicator(close=data["Close"], window=14)
+        data["RSI"]=rsi_indicator.rsi()
+
+        #Exponential moving average
+        data["EMA_20"] = data["Close"].ewm(span=20, adjust=False).mean()
+
+        
+        st.line_chart(data[["Close", "SMA_10", "SMA_20", "EMA_20"]])
+        
         st.subheader("RSI (Relative Strength Index)")
         st.line_chart(data["RSI"])
+        
+
+        
         latest_rsi=data["RSI"].iloc[-1]
         st.write("Latest RSI:", round(latest_rsi, 2))
-
         if latest_rsi > 70:
             st.warning("RSI indicates potentially overbought conditions.")
         elif latest_rsi < 30:
