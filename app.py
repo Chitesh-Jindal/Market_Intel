@@ -3,7 +3,8 @@ import yfinance as yf;
 import pandas as pd
 from ta.momentum import RSIIndicator
 from ta.trend import MACD
-
+from ta.volatility import BollingerBands
+#ta is technical analysis library provides implementations of common financial technical indicators.
 st.title("Market Intel")
 st.write("AI-Powered Indian Stock Intelligence")
 
@@ -64,27 +65,45 @@ if st.button("Analyze"):
         data["SMA_20"]=data["Close"].rolling(window=20).mean()
         data["SMA_Spread"]=data["SMA_10"]-data["SMA_20"]
 
+        #Exponential moving average
+        #similar to SMA but gives more weight to recent prices, so repond faster to recent changes
+        data["EMA_20"] = data["Close"].ewm(span=20, adjust=False).mean()
+
+        st.line_chart(data[["Close", "SMA_10", "SMA_20", "EMA_20"]])
+
+
         #RELATIVE STRENGTH INDEX measures how strongly the price is going upwards or downwards
         #ranges from 0 to 100
         rsi_indicator= RSIIndicator(close=data["Close"], window=14)
         data["RSI"]=rsi_indicator.rsi()
+        st.subheader("RSI (Relative Strength Index)")
+        st.line_chart(data["RSI"])
 
-        #Exponential moving average
-        data["EMA_20"] = data["Close"].ewm(span=20, adjust=False).mean()
-
+        
         #Moving average convergence divergence
+        #gives us meaure of trend/momentum
+        #MACD=12 day EMA - 26 day EMA
+        #+ve means upward momentum and vice versa similarly macd signal tells 9 day EMA a smoother EMA
+        #if macd crosses upward macd signal means increasing upward momentuma and downward means increasing downward momentum
         macd_indicator=MACD(close=data["Close"])
         data["MACD"]=macd_indicator.macd()
         data["MACD_Signal"]=macd_indicator.macd_signal();
-        
-        st.line_chart(data[["Close", "SMA_10", "SMA_20", "EMA_20"]])
-        
-        st.subheader("RSI (Relative Strength Index)")
-        st.line_chart(data["RSI"])
-        
         st.subheader("MACD (Moving Average Converge Divergence)")
         st.line_chart(data[["MACD","MACD_Signal"]])
+
         
+        #Bollinger Bands 
+        #- Middle Band → usually 20-day SMA
+        #- Upper Band → middle band + 2 standard deviations
+        #- Lower Band → middle band − 2 standard deviations
+        bb_indicator = BollingerBands(close=data["Close"], window=20, window_dev=2)
+
+        data["BB_Upper"] = bb_indicator.bollinger_hband()
+        data["BB_Middle"] = bb_indicator.bollinger_mavg()
+        data["BB_Lower"] = bb_indicator.bollinger_lband()
+        st.subheader("Bollinger Bands")
+        st.line_chart(data[["Close", "BB_Upper", "BB_Middle", "BB_Lower"]])
+
         latest_rsi=data["RSI"].iloc[-1]
         st.write("Latest RSI:", round(latest_rsi, 2))
         if latest_rsi > 70:
