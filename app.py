@@ -2,6 +2,7 @@ import streamlit as st
 import yfinance as yf;
 import pandas as pd
 from ta.momentum import RSIIndicator
+from ta.trend import MACD
 
 st.title("Market Intel")
 st.write("AI-Powered Indian Stock Intelligence")
@@ -71,13 +72,18 @@ if st.button("Analyze"):
         #Exponential moving average
         data["EMA_20"] = data["Close"].ewm(span=20, adjust=False).mean()
 
+        #Moving average convergence divergence
+        macd_indicator=MACD(close=data["Close"])
+        data["MACD"]=macd_indicator.macd()
+        data["MACD_Signal"]=macd_indicator.macd_signal();
         
         st.line_chart(data[["Close", "SMA_10", "SMA_20", "EMA_20"]])
         
         st.subheader("RSI (Relative Strength Index)")
         st.line_chart(data["RSI"])
         
-
+        st.subheader("MACD (Moving Average Converge Divergence)")
+        st.line_chart(data[["MACD","MACD_Signal"]])
         
         latest_rsi=data["RSI"].iloc[-1]
         st.write("Latest RSI:", round(latest_rsi, 2))
