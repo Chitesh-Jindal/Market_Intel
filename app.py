@@ -67,4 +67,6 @@ if st.button("Analyze"):
         st.write("Total Trading Volume:", total_volume)
         st.divider()
         st.line_chart(data[["Close", "SMA_10", "SMA_20"]])
+        st.subheader("RSI (Relative Strength Index)")
+        st.line_chart(data["RSI"])
 
