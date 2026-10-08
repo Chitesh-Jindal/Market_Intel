@@ -120,14 +120,36 @@ if st.button("Analyze"):
         st.write("Bollinger Middle:", round(latest["BB_Middle"], 2))
         st.write("Bollinger Lower:", round(latest["BB_Lower"], 2))
 
-
-        latest_rsi=data["RSI"].iloc[-1]
-        st.write("Latest RSI:", round(latest_rsi, 2))
-        if latest_rsi > 70:
-            st.warning("RSI indicates potentially overbought conditions.")
-        elif latest_rsi < 30:
-            st.warning("RSI indicates potentially oversold conditions.")
+        #what these values indicate
+        #trend= sma/ema
+        st.subheader("Technical Signal Summary")
+        if latest["SMA_10"]> latest["SMA_20"] and latest["EMA_20"]> latest["SMA_20"]
+            trend_signal = "Positive"
+        elif latest["SMA_10"] < latest["SMA_20"] and latest["EMA_20"] < latest["SMA_20"]:
+            trend_signal = "Negative"
         else:
-            st.info("RSI is in the neutral range.")
+            trend_signal = "Mixed"
+            
+        #momentum= rsi/macd
+        if latest["RSI"] > 70:
+            momentum_signal = "Strong / Overbought"
+        elif latest["RSI"] < 30:
+            momentum_signal = "Weak / Oversold"
+        elif latest["MACD"] > latest["MACD_Signal"]
+            momentum_signal = "Positive"  
+        else:
+            momentum_signal = "Negative" 
+
+        #volatility= bollinger bands
+        if latest["Close"] > latest["BB_Upper"]:
+            volatility_signal = "High / Above Upper Band"
+        elif latest["Close"] < latest["BB_Lower"]:
+            volatility_signal = "High / Below Lower Band"
+        else:
+            volatility_signal = "Normal"
+
+        st.write("Trend:", trend_signal)
+        st.write("Momentum:", momentum_signal)
+        st.write("Volatility:", volatility_signal)
 
 
