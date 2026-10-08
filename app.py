@@ -152,7 +152,8 @@ if st.button("Analyze"):
         st.write("Momentum:", momentum_signal)
         st.write("Volatility:", volatility_signal)
 
-        
+        #ml dataset
+        st.subheader("ML Dataset")
         ml_data = data[
             [
                 "Close",
