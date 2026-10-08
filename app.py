@@ -104,6 +104,23 @@ if st.button("Analyze"):
         st.subheader("Bollinger Bands")
         st.line_chart(data[["Close", "BB_Upper", "BB_Middle", "BB_Lower"]])
 
+
+        #combined tech analysis section
+        st.subheader("Latest Technical Indicators")
+
+        latest = data.iloc[-1]
+
+        st.write("SMA 10:", round(latest["SMA_10"], 2))
+        st.write("SMA 20:", round(latest["SMA_20"], 2))
+        st.write("EMA 20:", round(latest["EMA_20"], 2))
+        st.write("RSI:", round(latest["RSI"], 2))
+        st.write("MACD:", round(latest["MACD"], 2))
+        st.write("MACD Signal:", round(latest["MACD_Signal"], 2))
+        st.write("Bollinger Upper:", round(latest["BB_Upper"], 2))
+        st.write("Bollinger Middle:", round(latest["BB_Middle"], 2))
+        st.write("Bollinger Lower:", round(latest["BB_Lower"], 2))
+
+
         latest_rsi=data["RSI"].iloc[-1]
         st.write("Latest RSI:", round(latest_rsi, 2))
         if latest_rsi > 70:
