@@ -152,4 +152,24 @@ if st.button("Analyze"):
         st.write("Momentum:", momentum_signal)
         st.write("Volatility:", volatility_signal)
 
+        
+        ml_data = data[
+            [
+                "Close",
+                "Volume",
+                "Daily_Return (%)",
+                "SMA_10",
+                "SMA_20",
+                "SMA_Spread",
+                "EMA_20",
+                "RSI",
+                "MACD",
+                "MACD_Signal",
+                "BB_Upper",
+                "BB_Middle",
+                "BB_Lower"
+            ]
+        ].dropna()
+        
+        st.write(ml_data)
 
