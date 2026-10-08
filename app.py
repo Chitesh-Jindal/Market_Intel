@@ -123,7 +123,7 @@ if st.button("Analyze"):
         #what these values indicate
         #trend= sma/ema
         st.subheader("Technical Signal Summary")
-        if latest["SMA_10"]> latest["SMA_20"] and latest["EMA_20"]> latest["SMA_20"]
+        if latest["SMA_10"]> latest["SMA_20"] and latest["EMA_20"]> latest["SMA_20"]:
             trend_signal = "Positive"
         elif latest["SMA_10"] < latest["SMA_20"] and latest["EMA_20"] < latest["SMA_20"]:
             trend_signal = "Negative"
@@ -135,7 +135,7 @@ if st.button("Analyze"):
             momentum_signal = "Strong / Overbought"
         elif latest["RSI"] < 30:
             momentum_signal = "Weak / Oversold"
-        elif latest["MACD"] > latest["MACD_Signal"]
+        elif latest["MACD"] > latest["MACD_Signal"]:
             momentum_signal = "Positive"  
         else:
             momentum_signal = "Negative" 
