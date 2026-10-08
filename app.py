@@ -69,4 +69,14 @@ if st.button("Analyze"):
         st.line_chart(data[["Close", "SMA_10", "SMA_20"]])
         st.subheader("RSI (Relative Strength Index)")
         st.line_chart(data["RSI"])
+        latest_rsi=data["RSI"].iloc[-1]
+        st.write("Latest RSI:", round(latest_rsi, 2))
+
+        if latest_rsi > 70:
+            st.warning("RSI indicates potentially overbought conditions.")
+        elif latest_rsi < 30:
+            st.warning("RSI indicates potentially oversold conditions.")
+        else:
+            st.info("RSI is in the neutral range.")
+
 
