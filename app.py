@@ -224,7 +224,7 @@ if st.button("Analyze"):
         st.write("Confusion Matrix: ")
         st.write(confusion_matrix(y_test, y_pred, levels=[0,1]))
 
-        st.write(""Classification Report: ")
+        st.write("Classification Report: ")
         st.text( classification_report( y_test, y_pred, levels=[0,1], 
             target_names=["Non-positive Return", "Positive Return"], zero_division=0 ))
                 
