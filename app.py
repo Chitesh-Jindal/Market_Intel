@@ -225,9 +225,22 @@ if st.button("Analyze"):
         st.write(confusion_matrix(y_test, y_pred, labels=[0, 1]))
 
         st.write("Classification Report: ")
-        report = classification_report( y_test, y_pred, labels=[0,1], 
-            target_names=["Non-positive Return", "Positive Return"], zero_division=0, output_dict=True )
-        report_df =pd.DataFrame.from_dict(report, orient="index")
-        report_df = report_df.round(2)
-        st.dataframe(report_df, use_container_width=True)
+        # Separate metric rows from the standalone accuracy value
+        report_rows = {
+            name: metrics
+            for name, metrics in report.items()
+            if isinstance(metrics, dict)
+        }
+        
+        report_df = pd.DataFrame.from_dict(report_rows, orient="index")
+        
+        # Add accuracy as its own row
+        report_df.loc["accuracy"] = {
+            "precision": None,
+            "recall": None,
+            "f1-score": report["accuracy"],
+            "support": report["weighted avg"]["support"]
+        }
+        
+        st.dataframe(report_df.round(2), use_container_width=True)
 
