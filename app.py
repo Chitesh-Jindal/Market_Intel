@@ -206,7 +206,7 @@ if st.button("Analyze"):
         model=LogisticRegression(max_iter=1000)
         model.fit(X_train,y_train)
 
-        Y_pred=model.predict(X_test)
+        y_pred=model.predict(X_test)
         st.subheader("ML Model Predictions")
         st.write("Predicted directions (0 = non-positive, 1 = positive):", y_pred)
                 
