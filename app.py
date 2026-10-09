@@ -178,10 +178,26 @@ if st.button("Analyze"):
         
         st.write(ml_data)
 
+        #input and output for classification
         X=ml_data.drop( columns=["Target", "Next_Day_Return (%)"] )
         y=ml_data["Target"]
         st.subheader("ML Features and Target")
         st.write("Features (X):", X)
         st.write("Target (y):", y)
+
+        #splitting the data into training and testing data
+        split_index = int(len(X) * 0.8)
         
+        X_train = X.iloc[:split_index]
+        X_test = X.iloc[split_index:]
+        
+        y_train = y.iloc[:split_index]
+        y_test = y.iloc[split_index:]
+        
+        st.subheader("Training and Testing Data")
+        st.write("Training rows:", len(X_train))
+        st.write("Testing rows:", len(X_test))
+        st.write("Training dates:", X_train.index.min(), "to", X_train.index.max())
+        st.write("Testing dates:", X_test.index.min(), "to", X_test.index.max())
+                
 
