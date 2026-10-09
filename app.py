@@ -169,7 +169,7 @@ if st.button("Analyze"):
                 "MACD_Signal",
                 "BB_Upper",
                 "BB_Middle",
-                "BB_Lower"
+                "BB_Lower",
                 "Next_Day_Return (%)"
             ]
         ].dropna()
