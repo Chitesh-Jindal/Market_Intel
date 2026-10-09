@@ -5,6 +5,8 @@ from ta.momentum import RSIIndicator
 from ta.trend import MACD
 from ta.volatility import BollingerBands
 from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import confusionmatrix, classification_report, accuracy_score
 #ta is technical analysis library provides implementations of common financial technical indicators.
 st.title("Market Intel")
 st.write("AI-Powered Indian Stock Intelligence")
@@ -203,11 +205,27 @@ if st.button("Analyze"):
 
 
         #adding logistic regression
+        scaler=StandardScaler()    #feature scaling
+        X_train_scaled=scaler.fit_transform(X_train)
+        X_test_scaled=scaler.transform(X_test)
         model=LogisticRegression(max_iter=1000)
-        model.fit(X_train,y_train)
+        model.fit(X_train_scaled,y_train)
 
-        y_pred=model.predict(X_test)
+        y_pred=model.predict(X_test_scaled)
         st.subheader("ML Model Predictions")
         st.write("Predicted directions (0 = non-positive, 1 = positive):", y_pred)
+
+        #evaluate the predictions
+        st.subheader("Model Evaluation")
+        
+        accuracy=accuracy_score(y_test, y_perd)
+        st.write("Test Accuracy: ", round(accuracy * 100, 2), "%")
+
+        st.write("Confusion Matrix: ")
+        st.write(confusion_matrix(y_test, y_pred, levels=[0,1]))
+
+        st.write(""Classification Report: ")
+        st.text( classification_report( y_test, y_pred, levels=[0,1], 
+            target_names=["Non-positive Return", "Positive Return"], zero_division=0 ))
                 
 
