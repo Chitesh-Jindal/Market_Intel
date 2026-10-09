@@ -224,23 +224,4 @@ if st.button("Analyze"):
         st.write("Confusion Matrix: ")
         st.write(confusion_matrix(y_test, y_pred, labels=[0, 1]))
 
-        st.write("Classification Report: ")
-        # Separate metric rows from the standalone accuracy value
-        report_rows = {
-            name: metrics
-            for name, metrics in report.items()
-            if isinstance(metrics, dict)
-        }
         
-        report_df = pd.DataFrame.from_dict(report_rows, orient="index")
-        
-        # Add accuracy as its own row
-        report_df.loc["accuracy"] = {
-            "precision": None,
-            "recall": None,
-            "f1-score": report["accuracy"],
-            "support": report["weighted avg"]["support"]
-        }
-        
-        st.dataframe(report_df.round(2), use_container_width=True)
-
