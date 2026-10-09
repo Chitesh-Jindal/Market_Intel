@@ -226,8 +226,8 @@ if st.button("Analyze"):
 
         st.write("Classification Report: ")
         report = classification_report( y_test, y_pred, labels=[0,1], 
-            target_names=["Non-positive Return", "Positive Return"], zero_division=0 )
-        report_df = pd.DataFrame(report).transpose()
+            target_names=["Non-positive Return", "Positive Return"], zero_division=0, output_dict=True )
+        report_df =pd.DataFrame.from_dict(report, orient="index")
         report_df = report_df.round(2)
         st.dataframe(report_df, use_container_width=True)
 
