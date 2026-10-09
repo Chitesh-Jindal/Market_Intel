@@ -170,6 +170,7 @@ if st.button("Analyze"):
                 "BB_Upper",
                 "BB_Middle",
                 "BB_Lower"
+                "Next_Day_Return (%)"
             ]
         ].dropna()
         
