@@ -6,7 +6,7 @@ from ta.trend import MACD
 from ta.volatility import BollingerBands
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import confusionmatrix, classification_report, accuracy_score
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
 #ta is technical analysis library provides implementations of common financial technical indicators.
 st.title("Market Intel")
 st.write("AI-Powered Indian Stock Intelligence")
