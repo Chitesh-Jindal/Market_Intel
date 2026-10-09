@@ -178,3 +178,10 @@ if st.button("Analyze"):
         
         st.write(ml_data)
 
+        X=ml_data.drop( columns=["Target", "Next_Day_Return (%)"] )
+        Y=ml_data["Target"]
+        st.subheader("ML Features and Target")
+        st.write("Features (X):", X)
+        st.write("Target (y):", y)
+        
+
