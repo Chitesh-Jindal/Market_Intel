@@ -4,6 +4,7 @@ import pandas as pd
 from ta.momentum import RSIIndicator
 from ta.trend import MACD
 from ta.volatility import BollingerBands
+from sklearn.linear_model import LogisticRegression
 #ta is technical analysis library provides implementations of common financial technical indicators.
 st.title("Market Intel")
 st.write("AI-Powered Indian Stock Intelligence")
