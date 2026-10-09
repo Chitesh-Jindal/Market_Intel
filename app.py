@@ -218,7 +218,7 @@ if st.button("Analyze"):
         #evaluate the predictions
         st.subheader("Model Evaluation")
         
-        accuracy=accuracy_score(y_test, y_perd)
+        accuracy=accuracy_score(y_test, y_pred)
         st.write("Test Accuracy: ", round(accuracy * 100, 2), "%")
 
         st.write("Confusion Matrix: ")
