@@ -200,5 +200,14 @@ if st.button("Analyze"):
         st.write("Testing rows:", len(X_test))
         st.write("Training dates:", X_train.index.min(), "to", X_train.index.max())
         st.write("Testing dates:", X_test.index.min(), "to", X_test.index.max())
+
+
+        #adding logistic regression
+        model=LogisticRegression(max_iter=1000)
+        model.fit(X_train,Y_train)
+
+        Y_pred=model.predict(X_test)
+        st.subheader("ML Model Predictions")
+        st.write("Predicted directions (0 = non-positive, 1 = positive):", y_pred)
                 
 
