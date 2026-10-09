@@ -222,7 +222,7 @@ if st.button("Analyze"):
         st.write("Test Accuracy: ", round(accuracy * 100, 2), "%")
 
         st.write("Confusion Matrix: ")
-        st.write(confusion_matrix(y_test, y_pred, levels=[0,1]))
+        st.write(confusion_matrix(y_test, y_pred, labels=[0, 1]))
 
         st.write("Classification Report: ")
         st.text( classification_report( y_test, y_pred, levels=[0,1], 
