@@ -154,6 +154,7 @@ if st.button("Analyze"):
 
         #ml dataset
         st.subheader("ML Dataset")
+        data["Next_Day_Return (%)"] = ( data["Close"].shift(-1) / data["Close"] - 1 ) * 100
         ml_data = data[
             [
                 "Close",
