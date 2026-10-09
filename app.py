@@ -204,7 +204,7 @@ if st.button("Analyze"):
 
         #adding logistic regression
         model=LogisticRegression(max_iter=1000)
-        model.fit(X_train,Y_train)
+        model.fit(X_train,y_train)
 
         Y_pred=model.predict(X_test)
         st.subheader("ML Model Predictions")
