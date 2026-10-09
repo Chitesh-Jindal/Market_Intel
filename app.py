@@ -155,6 +155,7 @@ if st.button("Analyze"):
         #ml dataset
         st.subheader("ML Dataset")
         data["Next_Day_Return (%)"] = ( data["Close"].shift(-1) / data["Close"] - 1 ) * 100
+        data["Target"] = (data["Next_Day_Return (%)"] > 0).astype(int)
         ml_data = data[
             [
                 "Close",
@@ -170,7 +171,8 @@ if st.button("Analyze"):
                 "BB_Upper",
                 "BB_Middle",
                 "BB_Lower",
-                "Next_Day_Return (%)"
+                "Next_Day_Return (%)",
+                "Target"
             ]
         ].dropna()
         
