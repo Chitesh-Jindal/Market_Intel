@@ -224,4 +224,33 @@ if st.button("Analyze"):
         st.write("Confusion Matrix: ")
         st.write(confusion_matrix(y_test, y_pred, labels=[0, 1]))
 
+        #compare accuracy based on baseline
+        majority_class = y_train.value_counts().idxmax()
+        baseline_predictions = [majority_class] * len(y_test)
+        baseline_accuracy = accuracy_score(y_test, baseline_predictions)
+        
+        st.subheader("Model vs Baseline")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.metric(
+                "Logistic Regression Accuracy",
+                f"{accuracy:.2%}"
+            )
+        
+        with col2:
+            st.metric(
+                "Majority-Class Baseline",
+                f"{baseline_accuracy:.2%}"
+            )
+        
+        if accuracy > baseline_accuracy:
+            st.success("The model outperforms the majority-class baseline.")
+        elif accuracy == baseline_accuracy:
+            st.info("The model matches the majority-class baseline.")
+        else:
+            st.warning("The model performs below the majority-class baseline.")
+
+
         
