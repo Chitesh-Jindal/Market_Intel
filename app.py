@@ -227,7 +227,7 @@ if st.button("Analyze"):
         val_accuracy = accuracy_score(y_val, y_val_pred)
         st.write("Validation Accuracy:", round(val_accuracy * 100, 2), "%")
         
-       class_counts = y_train.value_counts()
+        class_counts = y_train.value_counts()
 
         if class_counts.get(0, 0) >= class_counts.get(1, 0):
             val_baseline_class = 0
