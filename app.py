@@ -189,45 +189,65 @@ if st.button("Analyze"):
         st.write("Features (X):", X)
         st.write("Target (y):", y)
 
-        #splitting the data into training and testing data
-        split_index = int(len(X) * 0.8)
+
+        # Split data chronologically into training, validation and testing
+        train_end = int(len(X) * 0.64)
+        validation_end = int(len(X) * 0.80)
         
-        X_train = X.iloc[:split_index]
-        X_test = X.iloc[split_index:]
+        X_train = X.iloc[:train_end]
+        X_val = X.iloc[train_end:validation_end]
+        X_test = X.iloc[validation_end:]
         
-        y_train = y.iloc[:split_index]
-        y_test = y.iloc[split_index:]
+        y_train = y.iloc[:train_end]
+        y_val = y.iloc[train_end:validation_end]
+        y_test = y.iloc[validation_end:]
         
-        st.subheader("Training and Testing Data")
+        st.subheader("Training, Validation and Testing Data")
+        
         st.write("Training rows:", len(X_train))
+        st.write("Validation rows:", len(X_val))
         st.write("Testing rows:", len(X_test))
+        
         st.write("Training dates:", X_train.index.min(), "to", X_train.index.max())
+        st.write("Validation dates:", X_val.index.min(), "to", X_val.index.max())
         st.write("Testing dates:", X_test.index.min(), "to", X_test.index.max())
 
 
+
         #adding logistic regression
-        scaler=StandardScaler()    #feature scaling
-        X_train_scaled=scaler.fit_transform(X_train)
-        X_test_scaled=scaler.transform(X_test)
-        model=LogisticRegression(max_iter=1000)
-        model.fit(X_train_scaled,y_train)
-
+        
+        #feature scaling
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_val_scaled = scaler.transform(X_val)
+        X_test_scaled = scaler.transform(X_test)
+        
+        # Train Logistic Regression using training data only
+        model = LogisticRegression(max_iter=1000)
+        model.fit(X_train_scaled, y_train)
+        
+        # Generate validation predictions
+        y_val_pred = model.predict(X_val_scaled)
+        st.subheader("Validation Evaluation")
+        val_accuracy = accuracy_score(y_val, y_val_pred)
+        st.write("Validation Accuracy:", round(val_accuracy * 100, 2), "%")
+        
+        val_baseline_class = y_train.value_counts().idxmax()
+        val_baseline_predictions = [val_baseline_class] * len(y_val)
+        
+        val_baseline_accuracy = accuracy_score(
+            y_val, val_baseline_predictions
+        )
+        
+        st.write(
+            "Validation Baseline Accuracy:",
+            round(val_baseline_accuracy * 100, 2),
+            "%"
+        )
+        
+        # Final test predictions — retained for final evaluation
         y_pred = model.predict(X_test_scaled)
-        y_prob = model.predict_proba(X_test_scaled)
-        
-        st.subheader("Prediction Probabilities")
-        
-        probability_data = pd.DataFrame({
-            "Actual Direction": y_test.values,
-            "Predicted Direction": y_pred,
-            "Probability of Non-positive Return (%)": y_prob[:, 0] * 100,
-            "Probability of Positive Return (%)": y_prob[:, 1] * 100
-        }, index=y_test.index)
-        
-        st.dataframe(probability_data.round(2))
 
-        st.subheader("ML Model Predictions")
-        st.write("Predicted directions (0 = non-positive, 1 = positive):", y_pred)
 
         #evaluate the predictions
         st.subheader("Model Evaluation")
