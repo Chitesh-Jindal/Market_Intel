@@ -7,6 +7,7 @@ from ta.volatility import BollingerBands
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
+import pandas as pd;
 #ta is technical analysis library provides implementations of common financial technical indicators.
 st.title("Market Intel")
 st.write("AI-Powered Indian Stock Intelligence")
@@ -14,7 +15,7 @@ st.write("AI-Powered Indian Stock Intelligence")
 stock = st.text_input("Enter stock symbol", "RELIANCE.NS")
 
 if st.button("Analyze"):
-    data = yf.download(stock, period="3mo")
+    data = yf.download(stock, period="2y")
     if isinstance(data.columns, pd.MultiIndex):
         data.columns = data.columns.get_level_values(0)
     #1mo means 1 month of data
@@ -224,17 +225,13 @@ if st.button("Analyze"):
         st.write("Confusion Matrix: ")
         st.write(confusion_matrix(y_test, y_pred, labels=[0, 1]))
         
-        st.write("Training class distribution:")
-        st.write("Non-positive (0):", int((y_train == 0).sum()))
-        st.write("Positive (1):", int((y_train == 1).sum()))
-
         
         #compare accuracy based on baseline
         majority_class = y_train.value_counts().idxmax()
         baseline_predictions = [majority_class] * len(y_test)
         baseline_accuracy = accuracy_score(y_test, baseline_predictions)
         
-        st.markdown("Model vs Baseline")
+        st.markdown("#### Model vs Baseline")
         
         col1, col2 = st.columns(2)
         
