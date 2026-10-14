@@ -207,11 +207,6 @@ if st.button("Analyze"):
         st.write("Training rows:", len(X_train))
         st.write("Validation rows:", len(X_val))
         st.write("Testing rows:", len(X_test))
-        
-        st.write("Training dates:", X_train.index.min(), "to", X_train.index.max())
-        st.write("Validation dates:", X_val.index.min(), "to", X_val.index.max())
-        st.write("Testing dates:", X_test.index.min(), "to", X_test.index.max())
-
 
 
         #adding logistic regression
