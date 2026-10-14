@@ -241,6 +241,20 @@ if st.button("Analyze"):
 
         st.write("Validation Confusion Matrix:")
         st.write(confusion_matrix(y_val, y_val_pred, labels=[0, 1]))
+
+        st.subheader("Class Distribution")
+
+        st.write("Training set:")
+        st.write(y_train.value_counts().sort_index().rename({
+            0: "Non-positive return (0)",
+            1: "Positive return (1)"
+        }))
+        
+        st.write("Validation set:")
+        st.write(y_val.value_counts().sort_index().rename({
+            0: "Non-positive return (0)",
+            1: "Positive return (1)"
+        }))
         
         # Final test predictions — retained for final evaluation
         y_pred = model.predict(X_test_scaled)
