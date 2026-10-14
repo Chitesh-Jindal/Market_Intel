@@ -212,6 +212,7 @@ if st.button("Analyze"):
         model=LogisticRegression(max_iter=1000)
         model.fit(X_train_scaled,y_train)
 
+        y_pred = model.predict(X_test_scaled)
         y_prob = model.predict_proba(X_test_scaled)
         
         st.subheader("Prediction Probabilities")
