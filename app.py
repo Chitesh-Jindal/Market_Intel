@@ -227,11 +227,24 @@ if st.button("Analyze"):
         val_accuracy = accuracy_score(y_val, y_val_pred)
         st.write("Validation Accuracy:", round(val_accuracy * 100, 2), "%")
         
-        val_baseline_class = y_train.value_counts().idxmax()
+       class_counts = y_train.value_counts()
+
+        if class_counts.get(0, 0) >= class_counts.get(1, 0):
+            val_baseline_class = 0
+        else:
+            val_baseline_class = 1
+        
         val_baseline_predictions = [val_baseline_class] * len(y_val)
-        val_baseline_accuracy = accuracy_score(y_val, val_baseline_predictions )
+        val_baseline_accuracy = accuracy_score(
+            y_val, val_baseline_predictions
+        )
+        
         st.write("Baseline prediction class:", val_baseline_class)
-        st.write("Validation Baseline Accuracy:", round(val_baseline_accuracy * 100, 2), "%")
+        st.write(
+            "Validation Baseline Accuracy:",
+            round(val_baseline_accuracy * 100, 2),
+            "%"
+        )
         
         st.write("Validation Confusion Matrix:")
         st.write(confusion_matrix(y_val, y_val_pred, labels=[0, 1]))
