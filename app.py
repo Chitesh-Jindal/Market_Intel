@@ -212,7 +212,19 @@ if st.button("Analyze"):
         model=LogisticRegression(max_iter=1000)
         model.fit(X_train_scaled,y_train)
 
-        y_pred=model.predict(X_test_scaled)
+        y_prob = model.predict_proba(X_test_scaled)
+        
+        st.subheader("Prediction Probabilities")
+        
+        probability_data = pd.DataFrame({
+            "Actual Direction": y_test.values,
+            "Predicted Direction": y_pred,
+            "Probability of Non-positive Return (%)": y_prob[:, 0] * 100,
+            "Probability of Positive Return (%)": y_prob[:, 1] * 100
+        }, index=y_test.index)
+        
+        st.dataframe(probability_data.round(2))
+
         st.subheader("ML Model Predictions")
         st.write("Predicted directions (0 = non-positive, 1 = positive):", y_pred)
 
