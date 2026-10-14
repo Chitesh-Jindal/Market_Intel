@@ -223,7 +223,12 @@ if st.button("Analyze"):
 
         st.write("Confusion Matrix: ")
         st.write(confusion_matrix(y_test, y_pred, labels=[0, 1]))
+        
+        st.write("Training class distribution:")
+        st.write("Non-positive (0):", int((y_train == 0).sum()))
+        st.write("Positive (1):", int((y_train == 1).sum()))
 
+        
         #compare accuracy based on baseline
         majority_class = y_train.value_counts().idxmax()
         baseline_predictions = [majority_class] * len(y_test)
