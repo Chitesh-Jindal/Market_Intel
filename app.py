@@ -224,7 +224,20 @@ if st.button("Analyze"):
 
         st.write("Confusion Matrix: ")
         st.write(confusion_matrix(y_test, y_pred, labels=[0, 1]))
+
+        st.subheader("Detailed Classification Metrics")
+
+        report = classification_report(
+            y_test,
+            y_pred,
+            labels=[0, 1],
+            target_names=["Non-positive", "Positive"],
+            output_dict=True,
+            zero_division=0
+        )
         
+        st.dataframe(pd.DataFrame(report).transpose().round(3))
+
         
         #compare accuracy based on baseline
         majority_class = y_train.value_counts().idxmax()
