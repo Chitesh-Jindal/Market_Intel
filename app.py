@@ -234,7 +234,7 @@ if st.button("Analyze"):
         baseline_predictions = [majority_class] * len(y_test)
         baseline_accuracy = accuracy_score(y_test, baseline_predictions)
         
-        st.markdown("## Model vs Baseline")
+        st.markdown("Model vs Baseline")
         
         col1, col2 = st.columns(2)
         
