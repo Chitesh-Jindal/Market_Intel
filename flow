@@ -1,28 +1,27 @@
-user enters a stock name
-fetch data using yfinance 
-  we have set the time frame of 2 years
-get important results analysing the data
-get different technical features 
-  SMA
-  EMA
-  RSI
-  MACD
-  Bollinger bands
-based on these technical features judge key parameters
-  trend- SMA & EMA
-  volatility- RSI & MACD
-  momentum- BB
-from ml dataset features(x) target(y)
-  if next day return (%) > 0 then target=1 else 0
-  NOTE :- next day return (%) is not part of X
-divide the dataset into train validation and test
-add logistic regression to train 
-predict for x_val and evaluate
-predict it for x_test
-check how strongly model favours either outcome using the the probabilities calculated by the model 
-evaluate the prediction based on y_test
-  using accuracy
-  get rest of the idea using confusion matrix 
-  report consisting of precision recall f1 score macro and weighted average
-compare model accuracy against a baseline
+1. user enters a stock ticker
+2. fetch 2 years of historical data using yfinance 
+3. clean and get important results analysing the data
+4. get different technical features 
+    SMA
+    EMA
+    RSI
+    MACD
+    Bollinger bands
+5. based on these technical features judge key parameters
+    trend- SMA & EMA
+    volatility- BB
+    momentum- RSI & MACD
+6. from ml dataset features(x) target(y)
+    if next day return (%) > 0 then target=1 else 0
+    NOTE :- next day return (%) is not part of X
+7. divide the dataset into train validation and test
+8. do feature scaling and add logistic regression to train 
+9. predict for x_val and evaluate 
+10. predict it for x_test 
+11. check how strongly model favours either outcome using the the probabilities calculated by the model 
+12. evaluate the prediction based on y_test
+    using accuracy
+    get rest of the idea using confusion matrix 
+    report consisting of precision recall f1 score macro and weighted average
+13. compare model accuracy against a baseline
 
