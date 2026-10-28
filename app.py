@@ -278,8 +278,37 @@ if st.button("Analyze"):
             ascending=False
         )
         
-        st.write("Intercept:", round(model.intercept_[0], 4))
+        st.write("Model Intercept:", round(model.intercept_[0], 4))
         st.dataframe(coefficient_data.round(4))
+        
+        # Average contribution of each feature to the model score
+        st.subheader("Average Feature Contributions")
+        
+        contribution_data = pd.DataFrame({
+            "Feature": X_train.columns,
+            "Training Contribution": (
+                X_train_scaled.mean(axis=0) * model.coef_[0]
+            ),
+            "Validation Contribution": (
+                X_val_scaled.mean(axis=0) * model.coef_[0]
+            )
+        })
+        
+        contribution_data["Contribution Shift"] = (
+            contribution_data["Validation Contribution"]
+            - contribution_data["Training Contribution"]
+        )
+        
+        contribution_data["Absolute Shift"] = (
+            contribution_data["Contribution Shift"].abs()
+        )
+        
+        contribution_data = contribution_data.sort_values(
+            "Absolute Shift",
+            ascending=False
+        )
+        
+        st.dataframe(contribution_data.round(4))
 
 
         # Predicted probability of a positive return
