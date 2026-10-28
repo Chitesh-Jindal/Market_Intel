@@ -260,6 +260,28 @@ if st.button("Analyze"):
         model = LogisticRegression(max_iter=1000)
         model.fit(X_train_scaled, y_train)
 
+
+        # Model coefficient diagnostics
+        st.subheader("Model Diagnostics: Feature Coefficients")
+        
+        coefficient_data = pd.DataFrame({
+            "Feature": X_train.columns,
+            "Coefficient": model.coef_[0]
+        })
+        
+        coefficient_data["Absolute Coefficient"] = (
+            coefficient_data["Coefficient"].abs()
+        )
+        
+        coefficient_data = coefficient_data.sort_values(
+            "Absolute Coefficient",
+            ascending=False
+        )
+        
+        st.write("Intercept:", round(model.intercept_[0], 4))
+        st.dataframe(coefficient_data.round(4))
+
+
         # Predicted probability of a positive return
         y_train_prob = model.predict_proba(X_train_scaled)[:, 1]
         y_val_prob = model.predict_proba(X_val_scaled)[:, 1]
