@@ -158,8 +158,12 @@ if st.button("Analyze"):
 
         #ml dataset
         st.subheader("ML Dataset")
-        data["Next_Day_Return (%)"] = ( data["Close"].shift(-1) / data["Close"] - 1 ) * 100
+        data["Next_Day_Return (%)"] = (data["Close"].shift(-1) / data["Close"] - 1) * 100
+    
+        data = data.dropna(subset=["Next_Day_Return (%)"])
+    
         data["Target"] = (data["Next_Day_Return (%)"] > 0).astype(int)
+        
         ml_data = data[
             [
                 "Close",
