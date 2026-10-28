@@ -224,7 +224,10 @@ if st.button("Analyze"):
         # Train Logistic Regression using training data only
         model = LogisticRegression(max_iter=1000)
         model.fit(X_train_scaled, y_train)
-        
+
+        # Generate predictions for diagnostic analysis
+        y_train_pred = model.predict(X_train_scaled)
+
         # Generate validation predictions
         y_val_pred = model.predict(X_val_scaled)
         st.subheader("Validation Evaluation")
@@ -269,6 +272,21 @@ if st.button("Analyze"):
         
         # Final test predictions — retained for final evaluation
         y_pred = model.predict(X_test_scaled)
+
+        # Positive-return prediction rates
+        st.subheader("Model Diagnostics: Positive-Return Rates")
+        
+        diagnostic_sets = [
+            ("Training", y_train, y_train_pred),
+            ("Validation", y_val, y_val_pred),
+            ("Test", y_test, y_pred)
+        ]
+        
+        for name, actual, predicted in diagnostic_sets:
+            st.write(f"{name} actual positive-return rate:",
+                     round(actual.mean() * 100, 2), "%")
+            st.write(f"{name} predicted positive-return rate:",
+                     round(predicted.mean() * 100, 2), "%")
 
 
         #evaluate the predictions
