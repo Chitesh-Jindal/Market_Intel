@@ -225,6 +225,11 @@ if st.button("Analyze"):
         model = LogisticRegression(max_iter=1000)
         model.fit(X_train_scaled, y_train)
 
+        # Predicted probability of a positive return
+        y_train_prob = model.predict_proba(X_train_scaled)[:, 1]
+        y_val_prob = model.predict_proba(X_val_scaled)[:, 1]
+        y_test_prob = model.predict_proba(X_test_scaled)[:, 1]
+
         # Generate predictions for diagnostic analysis
         y_train_pred = model.predict(X_train_scaled)
 
@@ -287,6 +292,24 @@ if st.button("Analyze"):
                      round(actual.mean() * 100, 2), "%")
             st.write(f"{name} predicted positive-return rate:",
                      round(predicted.mean() * 100, 2), "%")
+
+        # Predicted probability diagnostics
+        st.subheader("Model Diagnostics: Predicted Probabilities")
+        
+        probability_sets = [
+            ("Training", y_train_prob),
+            ("Validation", y_val_prob),
+            ("Test", y_test_prob)
+        ]
+        
+        for name, probabilities in probability_sets:
+            st.write(f"{name} probability statistics")
+            st.write({
+                "Minimum": round(probabilities.min(), 4),
+                "Maximum": round(probabilities.max(), 4),
+                "Mean": round(probabilities.mean(), 4),
+                "Standard deviation": round(probabilities.std(), 4)
+            })
 
 
         #evaluate the predictions
