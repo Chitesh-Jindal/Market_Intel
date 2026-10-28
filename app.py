@@ -7,6 +7,7 @@ from ta.volatility import BollingerBands
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
+from sklearn.metrics import roc_auc_score, log_loss
 import pandas as pd;
 #ta is technical analysis library provides implementations of common financial technical indicators.
 st.title("Market Intel")
@@ -360,6 +361,24 @@ if st.button("Analyze"):
             0: "Non-positive return (0)",
             1: "Positive return (1)"
         }))
+
+        # Validation probability evaluation
+        st.subheader("Model Diagnostics: Probability Metrics")
+        
+        val_auc = roc_auc_score(y_val, y_val_prob)
+        val_log_loss = log_loss(y_val, y_val_prob)
+        
+        training_positive_rate = y_train.mean()
+        
+        prior_probabilities = [
+            training_positive_rate
+        ] * len(y_val)
+        
+        prior_log_loss = log_loss(y_val, prior_probabilities)
+        
+        st.write("Validation ROC-AUC:", round(val_auc, 4))
+        st.write("Validation Log Loss:", round(val_log_loss, 4))
+        st.write("Prior-Only Baseline Log Loss:", round(prior_log_loss, 4))
         
         # Final test predictions — retained for final evaluation
         y_pred = model.predict(X_test_scaled)
