@@ -220,6 +220,41 @@ if st.button("Analyze"):
         X_train_scaled = scaler.fit_transform(X_train)
         X_val_scaled = scaler.transform(X_val)
         X_test_scaled = scaler.transform(X_test)
+
+        # Feature drift diagnostics
+        st.subheader("Model Diagnostics: Feature Drift")
+        
+        feature_names = X_train.columns
+        
+        train_scaled_df = pd.DataFrame(
+            X_train_scaled,
+            columns=feature_names,
+            index=X_train.index
+        )
+        
+        val_scaled_df = pd.DataFrame(
+            X_val_scaled,
+            columns=feature_names,
+            index=X_val.index
+        )
+        
+        drift_data = pd.DataFrame({
+            "Training Mean": train_scaled_df.mean(),
+            "Validation Mean": val_scaled_df.mean(),
+            "Validation Min": val_scaled_df.min(),
+            "Validation Max": val_scaled_df.max()
+        })
+        
+        drift_data["Validation Mean Shift"] = (
+            drift_data["Validation Mean"] - drift_data["Training Mean"]
+        )
+        
+        drift_data["Outside +/-3 SD"] = (
+            (drift_data["Validation Min"] < -3) |
+            (drift_data["Validation Max"] > 3)
+        )
+        
+        st.dataframe(drift_data.round(3))
         
         # Train Logistic Regression using training data only
         model = LogisticRegression(max_iter=1000)
