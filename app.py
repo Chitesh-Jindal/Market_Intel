@@ -279,24 +279,31 @@ if st.button("Analyze"):
             "Validation Min": val_scaled_df.min(),
             "Validation Max": val_scaled_df.max()
         })
-
-        drift_data["Absolute Mean Shift"] = drift_data["Validation Mean Shift"].abs()
         
-        drift_data = drift_data.sort_values(
-            "Absolute Mean Shift",
-            ascending=False
-        )
-        
+        # Calculate mean shift first
         drift_data["Validation Mean Shift"] = (
             drift_data["Validation Mean"] - drift_data["Training Mean"]
         )
         
+        # Calculate absolute mean shift
+        drift_data["Absolute Mean Shift"] = (
+            drift_data["Validation Mean Shift"].abs()
+        )
+        
+        # Identify observations outside 3 standard deviations
         drift_data["Outside +/-3 SD"] = (
             (drift_data["Validation Min"] < -3) |
             (drift_data["Validation Max"] > 3)
         )
         
+        # Sort features by largest distribution shift
+        drift_data = drift_data.sort_values(
+            "Absolute Mean Shift",
+            ascending=False
+        )
+        
         st.dataframe(drift_data.round(3))
+
         
         # Train Logistic Regression using training data only
         model = LogisticRegression(max_iter=1000)
