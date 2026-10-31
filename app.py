@@ -115,35 +115,21 @@ if st.button("Analyze"):
         
         data["Volume_SMA20"] = data["Volume"].rolling(window=20).mean()
         
-        data["Close_vs_SMA20"] = (
-            data["Close"] / data["SMA_20"] - 1
-        )
+        data["Close_vs_SMA20"] = data["Close"] / data["SMA_20"] - 1
         
-        data["SMA_Spread_Relative"] = (
-            data["SMA_Spread"] / data["Close"]
-        )
+        data["SMA_Spread_Relative"] = data["SMA_Spread"] / data["Close"]
         
-        data["Close_vs_EMA20"] = (
-            data["Close"] / data["EMA_20"] - 1
-        )
+        data["Close_vs_EMA20"] = data["Close"] / data["EMA_20"] - 1
         
-        data["MACD_Hist_Relative"] = (
-            (data["MACD"] - data["MACD_Signal"]) / data["Close"]
-        )
+        data["MACD_Hist_Relative"] = (data["MACD"] - data["MACD_Signal"]) / data["Close"]
         
         bb_range = (data["BB_Upper"] - data["BB_Lower"]).replace(0, float("nan"))
         
-        data["BB_Percent_B"] = (
-            (data["Close"] - data["BB_Lower"]) / bb_range
-        )
+        data["BB_Percent_B"] = (data["Close"] - data["BB_Lower"]) / bb_range
         
-        data["BB_Width_Relative"] = (
-            (data["BB_Upper"] - data["BB_Lower"]) / data["BB_Middle"]
-        )
+        data["BB_Width_Relative"] = (data["BB_Upper"] - data["BB_Lower"]) / data["BB_Middle"]
         
-        data["Volume_Relative"] = (
-            data["Volume"] / data["Volume_SMA20"].replace(0, float("nan"))
-        )
+        data["Volume_Relative"] = data["Volume"] / data["Volume_SMA20"].replace(0, float("nan"))
 
         
         #combined tech analysis section
@@ -193,27 +179,8 @@ if st.button("Analyze"):
         st.write("Momentum:", momentum_signal)
         st.write("Volatility:", volatility_signal)
 
-        required_columns = [
-            "Close_vs_SMA20",
-            "SMA_Spread_Relative",
-            "Close_vs_EMA20",
-            "MACD_Hist_Relative",
-            "BB_Percent_B",
-            "BB_Width_Relative",
-            "Volume_Relative"
-        ]
-        
-        missing_columns = [
-            col for col in required_columns
-            if col not in data.columns
-        ]
-        
-        st.write("Missing alternative features:", missing_columns)
-
-        
         
         #ml dataset
-        
         ml_data = data[
             [
                 "Close",
