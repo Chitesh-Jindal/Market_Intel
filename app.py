@@ -370,6 +370,18 @@ if st.button("Analyze"):
 
         # Generate validation predictions
         y_val_pred = model.predict(X_val_scaled)
+        
+        # Validation prediction diagnostics
+        st.subheader("Validation Prediction Analysis")
+
+        validation_results = pd.DataFrame({
+            "Actual Target": y_val,
+            "Predicted Probability": y_val_prob,
+            "Predicted Target": y_val_pred
+        })
+
+        st.dataframe(validation_results.round(4))
+
         st.subheader("Validation Evaluation")
         val_accuracy = accuracy_score(y_val, y_val_pred)
         st.write("Validation Accuracy:", round(val_accuracy * 100, 2), "%")
