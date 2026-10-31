@@ -110,6 +110,42 @@ if st.button("Analyze"):
         st.line_chart(data[["Close", "BB_Upper", "BB_Middle", "BB_Lower"]])
 
 
+        
+        # Alternative: Relative and Normalized Features
+        
+        data["Volume_SMA20"] = data["Volume"].rolling(window=20).mean()
+        
+        data["Close_vs_SMA20"] = (
+            data["Close"] / data["SMA_20"] - 1
+        )
+        
+        data["SMA_Spread_Relative"] = (
+            data["SMA_Spread"] / data["Close"]
+        )
+        
+        data["Close_vs_EMA20"] = (
+            data["Close"] / data["EMA_20"] - 1
+        )
+        
+        data["MACD_Hist_Relative"] = (
+            (data["MACD"] - data["MACD_Signal"]) / data["Close"]
+        )
+        
+        bb_range = (data["BB_Upper"] - data["BB_Lower"]).replace(0, float("nan"))
+        
+        data["BB_Percent_B"] = (
+            (data["Close"] - data["BB_Lower"]) / bb_range
+        )
+        
+        data["BB_Width_Relative"] = (
+            (data["BB_Upper"] - data["BB_Lower"]) / data["BB_Middle"]
+        )
+        
+        data["Volume_Relative"] = (
+            data["Volume"] / data["Volume_SMA20"].replace(0, float("nan"))
+        )
+
+        
         #combined tech analysis section
         st.subheader("Latest Technical Indicators")
 
@@ -158,12 +194,6 @@ if st.button("Analyze"):
         st.write("Volatility:", volatility_signal)
 
         #ml dataset
-        st.subheader("ML Dataset")
-        data["Next_Day_Return (%)"] = (data["Close"].shift(-1) / data["Close"] - 1) * 100
-    
-        data = data.dropna(subset=["Next_Day_Return (%)"])
-    
-        data["Target"] = (data["Next_Day_Return (%)"] > 0).astype(int)
         
         ml_data = data[
             [
@@ -180,10 +210,21 @@ if st.button("Analyze"):
                 "BB_Upper",
                 "BB_Middle",
                 "BB_Lower",
+        
+                # Alternative normalized features
+                "Close_vs_SMA20",
+                "SMA_Spread_Relative",
+                "Close_vs_EMA20",
+                "MACD_Hist_Relative",
+                "BB_Percent_B",
+                "BB_Width_Relative",
+                "Volume_Relative",
+        
                 "Next_Day_Return (%)",
                 "Target"
             ]
         ].dropna()
+
         
         st.write(ml_data)
 
