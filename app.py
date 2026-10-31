@@ -193,6 +193,25 @@ if st.button("Analyze"):
         st.write("Momentum:", momentum_signal)
         st.write("Volatility:", volatility_signal)
 
+        required_columns = [
+            "Close_vs_SMA20",
+            "SMA_Spread_Relative",
+            "Close_vs_EMA20",
+            "MACD_Hist_Relative",
+            "BB_Percent_B",
+            "BB_Width_Relative",
+            "Volume_Relative"
+        ]
+        
+        missing_columns = [
+            col for col in required_columns
+            if col not in data.columns
+        ]
+        
+        st.write("Missing alternative features:", missing_columns)
+
+        
+        
         #ml dataset
         
         ml_data = data[
