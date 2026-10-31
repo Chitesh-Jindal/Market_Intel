@@ -279,6 +279,13 @@ if st.button("Analyze"):
             "Validation Min": val_scaled_df.min(),
             "Validation Max": val_scaled_df.max()
         })
+
+        drift_data["Absolute Mean Shift"] = drift_data["Validation Mean Shift"].abs()
+        
+        drift_data = drift_data.sort_values(
+            "Absolute Mean Shift",
+            ascending=False
+        )
         
         drift_data["Validation Mean Shift"] = (
             drift_data["Validation Mean"] - drift_data["Training Mean"]
