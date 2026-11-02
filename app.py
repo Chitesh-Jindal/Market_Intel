@@ -189,21 +189,23 @@ if st.button("Analyze"):
         data["Target"] = (data["Next_Day_Return (%)"] > 0).astype(int)
         
         ml_data = data[
-            "Close_vs_SMA20",
-            "SMA_Spread_Relative",
-            "Close_vs_EMA20",
-            "MACD_Hist_Relative",
-            "BB_Percent_B",
-            "BB_Width_Relative",
-            "Volume_Relative"
+            [
+                "Close_vs_SMA20",
+                "SMA_Spread_Relative",
+                "Close_vs_EMA20",
+                "MACD_Hist_Relative",
+                "BB_Percent_B",
+                "BB_Width_Relative",
+                "Volume_Relative"
+            ]
         ].dropna()
 
         
         st.write(ml_data)
 
         #input and output for classification
-        X=ml_data.drop( columns=["Target", "Next_Day_Return (%)"] )
-        y=ml_data["Target"]
+        X=ml_data
+        y=data.loc[ml_data.index, "Target"]
         st.subheader("ML Features and Target")
         st.write("Features (X):", X)
         st.write("Target (y):", y)
