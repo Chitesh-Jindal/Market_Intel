@@ -352,6 +352,39 @@ if st.button("Analyze"):
 
         # Generate validation predictions
         y_val_pred = model.predict(X_val_scaled)
+
+
+        # Threshold analysis using validation probabilities
+        st.subheader("Validation Threshold Analysis")
+        
+        thresholds = [0.40, 0.45, 0.50, 0.55, 0.60, 0.65]
+        
+        threshold_results = []
+        
+        for threshold in thresholds:
+            threshold_predictions = (y_val_prob >= threshold).astype(int)
+        
+            threshold_results.append({
+                "Threshold": threshold,
+                "Accuracy": accuracy_score(
+                    y_val, threshold_predictions
+                ),
+                "Macro F1": classification_report(
+                    y_val,
+                    threshold_predictions,
+                    output_dict=True,
+                    zero_division=0
+                )["macro avg"]["f1-score"],
+                "Positive Predictions (%)": (
+                    threshold_predictions.mean() * 100
+                )
+            })
+        
+        threshold_df = pd.DataFrame(threshold_results)
+        
+        st.dataframe(threshold_df.round(4))
+
+
         
         # Validation prediction diagnostics
         st.subheader("Validation Prediction Analysis")
