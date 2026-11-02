@@ -189,33 +189,13 @@ if st.button("Analyze"):
         data["Target"] = (data["Next_Day_Return (%)"] > 0).astype(int)
         
         ml_data = data[
-            [
-                "Close",
-                "Volume",
-                "Daily_Return (%)",
-                "SMA_10",
-                "SMA_20",
-                "SMA_Spread",
-                "EMA_20",
-                "RSI",
-                "MACD",
-                "MACD_Signal",
-                "BB_Upper",
-                "BB_Middle",
-                "BB_Lower",
-        
-                # Alternative normalized features
-                "Close_vs_SMA20",
-                "SMA_Spread_Relative",
-                "Close_vs_EMA20",
-                "MACD_Hist_Relative",
-                "BB_Percent_B",
-                "BB_Width_Relative",
-                "Volume_Relative",
-        
-                "Next_Day_Return (%)",
-                "Target"
-            ]
+            "Close_vs_SMA20",
+            "SMA_Spread_Relative",
+            "Close_vs_EMA20",
+            "MACD_Hist_Relative",
+            "BB_Percent_B",
+            "BB_Width_Relative",
+            "Volume_Relative"
         ].dropna()
 
         
