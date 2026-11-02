@@ -384,7 +384,8 @@ if st.button("Analyze"):
         
         st.dataframe(threshold_df.round(4))
 
-
+        selected_threshold = 0.55
+        st.write("Selected Threshold:", selected_threshold)
         
         # Validation prediction diagnostics
         st.subheader("Validation Prediction Analysis")
@@ -456,7 +457,7 @@ if st.button("Analyze"):
         st.write("Prior-Only Baseline Log Loss:", round(prior_log_loss, 4))
         
         # Final test predictions — retained for final evaluation
-        y_pred = model.predict(X_test_scaled)
+        y_pred = (y_test_prob >= selected_threshold).astype(int)
 
         # Positive-return prediction rates
         st.subheader("Model Diagnostics: Positive-Return Rates")
