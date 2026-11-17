@@ -9,6 +9,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
 from sklearn.metrics import roc_auc_score, log_loss
 import pandas as pd;
+from sklearn.metrics import f1_score
+
 #ta is technical analysis library provides implementations of common financial technical indicators.
 st.title("Market Intel")
 st.write("AI-Powered Indian Stock Intelligence")
@@ -385,6 +387,12 @@ if st.button("Analyze"):
         st.dataframe(threshold_df.round(4))
 
         selected_threshold = 0.55
+        y_train_pred = (
+            y_train_prob >= selected_threshold
+        ).astype(int)
+        y_val_pred = (
+            y_val_prob >= selected_threshold
+        ).astype(int)
         st.write("Selected Threshold:", selected_threshold)
         
         # Validation prediction diagnostics
@@ -543,6 +551,236 @@ if st.button("Analyze"):
             st.info("The model matches the majority-class baseline.")
         else:
             st.warning("The model performs below the majority-class baseline.")
+
+
+        
+        # WALK-FORWARD VALIDATION
+
+        st.divider()
+        st.subheader("Walk-Forward Validation")
+
+        n = len(X)
+
+        initial_train_size = int(n * 0.50)
+        validation_size = int(n * 0.10)
+        test_size = int(n * 0.10)
+
+        thresholds = [0.40, 0.45, 0.50, 0.55, 0.60, 0.65]
+
+        walk_forward_results = []
+
+        train_end = initial_train_size
+        fold = 1
+
+        while train_end + validation_size + test_size <= n:
+
+            # Chronological indices
+            val_start = train_end
+            val_end = val_start + validation_size
+
+            test_start = val_end
+            test_end = test_start + test_size
+
+            # Split the data
+            X_train_fold = X.iloc[:train_end]
+            X_val_fold = X.iloc[val_start:val_end]
+            X_test_fold = X.iloc[test_start:test_end]
+
+            y_train_fold = y.iloc[:train_end]
+            y_val_fold = y.iloc[val_start:val_end]
+            y_test_fold = y.iloc[test_start:test_end]
+
+
+            # Check whether validation and test contain both classes
+            if y_val_fold.nunique() < 2 or y_test_fold.nunique() < 2:
+                st.warning(
+                    f"Fold {fold} skipped: validation or test "
+                    "contains only one class."
+                )
+                train_end += test_size
+                fold += 1
+                continue
+
+    
+            # Ensure training data contains both classes
+            if y_train_fold.nunique() < 2:
+                st.warning(f"Fold {fold} skipped: training has only one class.")
+                train_end += test_size
+                fold += 1
+                continue
+
+            # Scale features using training data only
+            fold_scaler = StandardScaler()
+
+            X_train_fold_scaled = fold_scaler.fit_transform(X_train_fold)
+            X_val_fold_scaled = fold_scaler.transform(X_val_fold)
+            X_test_fold_scaled = fold_scaler.transform(X_test_fold)
+
+            # Train a fresh model
+            fold_model = LogisticRegression(max_iter=1000)
+
+            fold_model.fit(
+                X_train_fold_scaled,
+                y_train_fold
+            )
+
+            # Validation probabilities
+            val_prob = fold_model.predict_proba(
+                X_val_fold_scaled
+            )[:, 1]
+
+            # Select threshold using validation Macro F1
+            best_threshold = 0.50
+            best_val_f1 = -1
+
+            for threshold in thresholds:
+
+                val_predictions = (
+                    val_prob >= threshold
+                ).astype(int)
+
+                val_f1 = f1_score(
+                    y_val_fold,
+                    val_predictions,
+                    labels=[0, 1],
+                    average="macro",
+                    zero_division=0
+                )
+
+                if (
+                    val_f1 > best_val_f1
+                    or (
+                        val_f1 == best_val_f1
+                        and abs(threshold - 0.50)
+                        < abs(best_threshold - 0.50)
+                    )
+                ):
+                    best_val_f1 = val_f1
+                    best_threshold = threshold
+
+            # Evaluate on unseen test data
+            test_prob = fold_model.predict_proba(
+                X_test_fold_scaled
+            )[:, 1]
+
+            test_predictions = (
+                test_prob >= best_threshold
+            ).astype(int)
+
+            # Model metrics
+            test_accuracy = accuracy_score(
+                y_test_fold,
+                test_predictions
+            )
+
+            test_f1 = f1_score(
+                y_test_fold,
+                test_predictions,
+                labels=[0, 1],
+                average="macro",
+                zero_division=0
+            )
+
+            # Majority-class baseline
+            majority_class_fold = (
+                y_train_fold.value_counts().idxmax()
+            )
+
+            baseline_predictions = [
+                majority_class_fold
+            ] * len(y_test_fold)
+
+            baseline_accuracy = accuracy_score(
+                y_test_fold,
+                baseline_predictions
+            )
+
+            # Save fold results
+            walk_forward_results.append({
+                "Fold": fold,
+                "Training Rows": len(X_train_fold),
+                "Validation Rows": len(X_val_fold),
+                "Testing Rows": len(X_test_fold),
+                "Test Start": str(X_test_fold.index[0])[:10],
+                "Test End": str(X_test_fold.index[-1])[:10],
+                "Selected Threshold": best_threshold,
+                "Test Accuracy": test_accuracy,
+                "Test Macro F1": test_f1,
+                "Baseline Accuracy": baseline_accuracy
+            })
+
+            # Move forward in time
+            train_end += test_size
+            fold += 1
+
+        # Display results
+        if walk_forward_results:
+
+            walk_forward_df = pd.DataFrame(
+                walk_forward_results
+            )
+
+            st.subheader("Individual Fold Results")
+
+            st.dataframe(
+                walk_forward_df.round(4),
+                use_container_width=True
+            )
+
+            # Average performance
+            st.subheader("Overall Walk-Forward Performance")
+
+            avg_accuracy = walk_forward_df[
+                "Test Accuracy"
+            ].mean()
+
+            avg_f1 = walk_forward_df[
+                "Test Macro F1"
+            ].mean()
+
+            avg_baseline = walk_forward_df[
+                "Baseline Accuracy"
+            ].mean()
+
+            col1, col2, col3 = st.columns(3)
+
+            with col1:
+                st.metric(
+                    "Average Test Accuracy",
+                    f"{avg_accuracy:.2%}"
+                )
+
+            with col2:
+                st.metric(
+                    "Average Macro F1",
+                    f"{avg_f1:.3f}"
+                )
+
+            with col3:
+                st.metric(
+                    "Average Baseline Accuracy",
+                    f"{avg_baseline:.2%}"
+                )
+
+            st.subheader("Walk-Forward Model vs Baseline")
+
+            if avg_accuracy > avg_baseline:
+                st.success(
+                    "Model outperforms the baseline on average."
+                )
+            elif avg_accuracy == avg_baseline:
+                st.info(
+                    "Model matches the baseline on average."
+                )
+            else:
+                st.warning(
+                    "Model performs below the baseline on average."
+                )
+
+        else:
+            st.warning(
+                "Not enough data to perform walk-forward validation."
+            )
 
 
         
