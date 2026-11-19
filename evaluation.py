@@ -1,5 +1,6 @@
 
 import pandas as pd
+from sklearn.preprocessing import StandardScaler
 
 from sklearn.metrics import (
     accuracy_score,
