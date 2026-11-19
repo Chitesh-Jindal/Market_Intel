@@ -9,12 +9,11 @@ from technical_analysis import (
 )
 from ml_pipeline import (
     prepare_ml_dataset,
-    train_model
+    EXISTING_FEATURES,
+    ALL_FEATURES,
+    get_models
 )
-from evaluation import (
-    evaluate_model,
-    walk_forward_validation
-)
+from evaluation import walk_forward_validation
 
 
 # --------------------------------------------------
@@ -28,99 +27,116 @@ st.set_page_config(
 )
 
 st.title("Market Intel")
-st.write("AI-Powered Indian Stock Intelligence")
+st.caption("AI-Powered Indian Stock Intelligence")
 
-stock = st.text_input(
-    "Enter stock symbol",
-    "RELIANCE.NS"
+st.write(
+    "Analyze historical stock data, technical indicators, "
+    "and machine-learning model performance."
 )
 
 
 # --------------------------------------------------
-# 2. DOWNLOAD HISTORICAL DATA
+# 2. STOCK SELECTION
 # --------------------------------------------------
 
-if st.button("Analyze"):
+stock = st.text_input(
+    "Enter an NSE stock symbol",
+    value="RELIANCE.NS"
+).strip().upper()
 
-    if not stock.strip():
+analyze = st.button(
+    "Analyze Stock",
+    type="primary"
+)
+
+
+# --------------------------------------------------
+# 3. MAIN ANALYSIS
+# --------------------------------------------------
+
+if analyze:
+
+    if not stock:
         st.error("Please enter a valid stock symbol.")
         st.stop()
 
-    with st.spinner("Downloading stock data..."):
+    with st.spinner("Downloading historical stock data..."):
 
-        data = load_stock_data(stock.strip())
+        data = load_stock_data(stock, period="2y")
 
-    if data is None:
-        st.error("No data found for this stock.")
+    if data is None or data.empty:
+        st.error("No stock data found. Check the symbol and try again.")
         st.stop()
 
-    # Work with a separate copy
     data = data.copy()
 
-    st.success(f"Successfully loaded data for {stock.upper()}")
+    st.success(f"Historical data loaded for {stock}")
 
     # --------------------------------------------------
-    # 3. HISTORICAL DATA
+    # 4. HISTORICAL DATA
     # --------------------------------------------------
 
-    st.subheader("Historical Data")
-    st.dataframe(data, use_container_width=True)
+    st.header("1. Historical Market Data")
 
-    st.write("Missing Values")
-    st.dataframe(data.isnull().sum().to_frame("Missing Values"))
+    col1, col2, col3 = st.columns(3)
 
-    st.divider()
+    col1.metric("Trading Days", len(data))
+    col2.metric("Latest Close", f"₹{data['Close'].iloc[-1]:,.2f}")
+    col3.metric(
+        "Latest Daily Return",
+        f"{data['Daily_Return (%)'].iloc[-1]:.2f}%"
+    )
+
+    with st.expander("View historical data"):
+        st.dataframe(data, use_container_width=True)
 
     # --------------------------------------------------
-    # 4. KEY STATISTICS
+    # 5. KEY STATISTICS
     # --------------------------------------------------
 
-    st.subheader(f"Analysis for {stock.upper()}")
-    st.caption("Key Statistics")
+    st.subheader("Key Statistics")
 
     average_return = data["Daily_Return (%)"].mean()
-    volatility = data["Daily_Return (%)"].std()
+    daily_volatility = data["Daily_Return (%)"].std()
 
     highest_price = data["Close"].max()
     lowest_price = data["Close"].min()
+
+    first_price = data["Close"].iloc[0]
     latest_price = data["Close"].iloc[-1]
 
-    price_range = highest_price - lowest_price
-
-    total_volume = data["Volume"].sum()
-    trading_days = len(data)
-
-    price_change = latest_price - data["Close"].iloc[0]
-
-    price_change_percent = (
-        price_change / data["Close"].iloc[0]
+    total_change = (
+        (latest_price / first_price) - 1
     ) * 100
 
     col1, col2, col3 = st.columns(3)
 
-    col1.metric("Latest Closing Price", f"{latest_price:.2f}")
-    col2.metric("Price Change", f"{price_change:.2f}")
-    col3.metric("Price Change (%)", f"{price_change_percent:.2f}%")
+    col1.metric(
+        "Average Daily Return",
+        f"{average_return:.3f}%"
+    )
+
+    col2.metric(
+        "Daily Volatility",
+        f"{daily_volatility:.3f}%"
+    )
+
+    col3.metric(
+        "Total Price Change",
+        f"{total_change:.2f}%"
+    )
 
     col1, col2, col3 = st.columns(3)
 
-    col1.metric("Highest Closing Price", f"{highest_price:.2f}")
-    col2.metric("Lowest Closing Price", f"{lowest_price:.2f}")
-    col3.metric("Closing Price Range", f"{price_range:.2f}")
-
-    col1, col2, col3 = st.columns(3)
-
-    col1.metric("Average Daily Return", f"{average_return:.2f}%")
-    col2.metric("Daily Volatility", f"{volatility:.2f}%")
-    col3.metric("Trading Days", trading_days)
-
-    st.write("Total Trading Volume:", f"{total_volume:,.0f}")
-
-    st.divider()
+    col1.metric("Highest Close", f"₹{highest_price:,.2f}")
+    col2.metric("Lowest Close", f"₹{lowest_price:,.2f}")
+    col3.metric("Total Volume", f"{data['Volume'].sum():,.0f}")
 
     # --------------------------------------------------
-    # 5. TECHNICAL ANALYSIS
+    # 6. TECHNICAL ANALYSIS
     # --------------------------------------------------
+
+    st.header("2. Technical Analysis")
 
     data = calculate_technical_indicators(data)
 
@@ -130,11 +146,15 @@ if st.button("Analyze"):
         data[["Close", "SMA_10", "SMA_20", "EMA_20"]]
     )
 
-    st.subheader("RSI (Relative Strength Index)")
+    st.subheader("Relative Strength Index")
+
     st.line_chart(data["RSI"])
 
-    st.subheader("MACD (Moving Average Convergence Divergence)")
-    st.line_chart(data[["MACD", "MACD_Signal"]])
+    st.subheader("MACD")
+
+    st.line_chart(
+        data[["MACD", "MACD_Signal"]]
+    )
 
     st.subheader("Bollinger Bands")
 
@@ -142,7 +162,7 @@ if st.button("Analyze"):
         data[["Close", "BB_Upper", "BB_Middle", "BB_Lower"]]
     )
 
-    # Latest indicators
+    # Latest indicator values
     latest = data.iloc[-1]
 
     st.subheader("Latest Technical Indicators")
@@ -159,8 +179,16 @@ if st.button("Analyze"):
         "Bollinger Lower": latest["BB_Lower"]
     }
 
-    for name, value in indicator_values.items():
-        st.write(f"{name}: {value:.2f}")
+    indicator_df = pd.DataFrame(
+        indicator_values.items(),
+        columns=["Indicator", "Latest Value"]
+    )
+
+    st.dataframe(
+        indicator_df.round(3),
+        use_container_width=True,
+        hide_index=True
+    )
 
     # Technical signal summary
     signals = get_technical_signals(data)
@@ -173,278 +201,284 @@ if st.button("Analyze"):
     col2.metric("Momentum", signals["Momentum"])
     col3.metric("Volatility", signals["Volatility"])
 
-    st.divider()
-
     # --------------------------------------------------
-    # 6. MACHINE LEARNING DATASET
+    # 7. MACHINE-LEARNING DATASET
     # --------------------------------------------------
 
-    st.subheader("ML Dataset")
+    st.header("3. Machine Learning Dataset")
 
     X, y, ml_data = prepare_ml_dataset(data)
 
-    st.write("ML Features")
-    st.dataframe(X, use_container_width=True)
-
-    st.subheader("ML Features and Target")
-
-    st.write("Features (X):")
-    st.dataframe(X, use_container_width=True)
-
-    st.write("Target (y):")
-    st.dataframe(y.to_frame(), use_container_width=True)
-
-    st.divider()
-
-    # --------------------------------------------------
-    # 7. TRAINING AND TESTING
-    # --------------------------------------------------
-
-    st.subheader("Training, Validation and Testing Data")
-
-    if len(X) < 30:
-        st.error("Insufficient data for the existing ML evaluation.")
+    if len(X) < 100:
+        st.error(
+            "Not enough usable observations for reliable "
+            "walk-forward evaluation."
+        )
         st.stop()
 
-    results = train_model(X, y)
+    st.write("The target is whether the next trading day's return is positive.")
 
-    st.write("Training rows:", len(results["X_train"]))
-    st.write("Validation rows:", len(results["X_val"]))
-    st.write("Testing rows:", len(results["X_test"]))
+    col1, col2, col3 = st.columns(3)
 
-    # --------------------------------------------------
-    # 8. FEATURE DRIFT
-    # --------------------------------------------------
+    col1.metric("Usable Observations", len(X))
+    col2.metric("Original Features", len(EXISTING_FEATURES))
+    col3.metric("Expanded Features", len(ALL_FEATURES))
 
-    st.subheader("Model Diagnostics: Feature Drift")
-
-    st.dataframe(
-        results["drift_data"].round(4),
-        use_container_width=True
-    )
-
-    # --------------------------------------------------
-    # 9. MODEL COEFFICIENTS
-    # --------------------------------------------------
-
-    st.subheader("Model Diagnostics: Feature Coefficients")
-
-    st.write(
-        "Model Intercept:",
-        round(results["model_intercept"], 4)
-    )
-
-    st.dataframe(
-        results["coefficient_data"].round(4),
-        use_container_width=True
-    )
-
-    # --------------------------------------------------
-    # 10. FEATURE CONTRIBUTIONS
-    # --------------------------------------------------
-
-    st.subheader("Average Feature Contributions")
-
-    st.dataframe(
-        results["contribution_data"].round(4),
-        use_container_width=True
-    )
-
-    st.divider()
-
-    # --------------------------------------------------
-    # 11. MODEL EVALUATION
-    # --------------------------------------------------
-
-    st.subheader("Model Evaluation")
-
-    evaluation = evaluate_model(results)
-
-    # Threshold analysis
-    st.subheader("Validation Threshold Analysis")
-
-    st.dataframe(
-        evaluation["threshold_df"].round(4),
-        use_container_width=True
-    )
-
-    st.write(
-        "Selected Threshold:",
-        evaluation["selected_threshold"]
-    )
-
-    # Validation predictions
-    st.subheader("Validation Prediction Analysis")
-
-    st.dataframe(
-        evaluation["validation_results"].round(4),
-        use_container_width=True
-    )
-
-    # Validation evaluation
-    st.subheader("Validation Evaluation")
-
-    st.write(
-        "Validation Accuracy:",
-        f"{evaluation['val_accuracy'] * 100:.2f}%"
-    )
-
-    st.write(
-        "Baseline Prediction Class:",
-        evaluation["val_baseline_class"]
-    )
-
-    st.write(
-        "Validation Baseline Accuracy:",
-        f"{evaluation['val_baseline_accuracy'] * 100:.2f}%"
-    )
-
-    st.write("Validation Confusion Matrix:")
-    st.write(evaluation["val_confusion_matrix"])
-
-    # Class distributions
-    st.subheader("Class Distribution")
-
-    st.write("Training Set:")
-    st.write(evaluation["training_class_distribution"])
-
-    st.write("Validation Set:")
-    st.write(evaluation["validation_class_distribution"])
-
-    # Probability metrics
-    st.subheader("Model Diagnostics: Probability Metrics")
-
-    st.write("Validation ROC-AUC:", round(evaluation["val_auc"], 4))
-    st.write("Validation Log Loss:", round(evaluation["val_log_loss"], 4))
-    st.write("Prior-Only Baseline Log Loss:", round(evaluation["prior_log_loss"], 4))
-
-    # Positive-return rates
-    st.subheader("Model Diagnostics: Positive-Return Rates")
-
-    for name, rates in evaluation["positive_return_rates"].items():
-
-        st.write(name, rates)
-
-    # Probability statistics
-    st.subheader("Model Diagnostics: Predicted Probabilities")
-
-    for name, statistics in evaluation["probability_statistics"].items():
-
-        st.write(name, statistics)
-
-    # --------------------------------------------------
-    # 12. FINAL TEST EVALUATION
-    # --------------------------------------------------
-
-    st.subheader("Final Test Evaluation")
-
-    accuracy = evaluation["test_accuracy"]
-
-    st.metric(
-        "Test Accuracy",
-        f"{accuracy * 100:.2f}%"
-    )
-
-    st.write("Confusion Matrix:")
-    st.write(evaluation["test_confusion_matrix"])
-
-    st.subheader("Detailed Classification Metrics")
-
-    st.dataframe(
-        evaluation["classification_metrics"].round(3),
-        use_container_width=True
-    )
-
-    # Model versus baseline
-    st.subheader("Model vs Baseline")
-
-    col1, col2 = st.columns(2)
-
-    col1.metric(
-        "Logistic Regression Accuracy",
-        f"{accuracy:.2%}"
-    )
-
-    col2.metric(
-        "Majority-Class Baseline",
-        f"{evaluation['baseline_accuracy']:.2%}"
-    )
-
-    if accuracy > evaluation["baseline_accuracy"]:
-        st.success(
-            "The model outperforms the majority-class baseline."
-        )
-
-    elif accuracy == evaluation["baseline_accuracy"]:
-        st.info(
-            "The model matches the majority-class baseline."
-        )
-
-    else:
-        st.warning(
-            "The model performs below the majority-class baseline."
-        )
-
-    st.divider()
-
-    # --------------------------------------------------
-    # 13. WALK-FORWARD VALIDATION
-    # --------------------------------------------------
-
-    st.subheader("Walk-Forward Validation")
-
-    walk_forward = walk_forward_validation(X, y)
-
-    if walk_forward is not None:
-
-        st.subheader("Individual Fold Results")
-
+    with st.expander("View the original 7 features"):
         st.dataframe(
-            walk_forward["results"].round(4),
+            X[EXISTING_FEATURES],
             use_container_width=True
         )
 
-        st.subheader("Overall Walk-Forward Performance")
-
-        col1, col2, col3 = st.columns(3)
-
-        col1.metric(
-            "Average Test Accuracy",
-            f"{walk_forward['avg_accuracy']:.2%}"
+    with st.expander("View all expanded features"):
+        st.dataframe(
+            X[ALL_FEATURES],
+            use_container_width=True
         )
 
-        col2.metric(
-            "Average Macro F1",
-            f"{walk_forward['avg_f1']:.3f}"
+    with st.expander("View target distribution"):
+        target_distribution = (
+            y.value_counts()
+            .sort_index()
+            .rename({
+                0: "Non-positive return",
+                1: "Positive return"
+            })
+            .to_frame("Observations")
         )
 
-        col3.metric(
-            "Average Baseline Accuracy",
-            f"{walk_forward['avg_baseline']:.2%}"
+        st.dataframe(target_distribution)
+
+    st.caption(
+        "The next-day return is used to create the target. "
+        "It is not included among the model input features."
+    )
+
+    # --------------------------------------------------
+    # 8. MODEL COMPARISON
+    # --------------------------------------------------
+
+    st.header("4. Machine Learning Model Comparison")
+
+    models = get_models()
+
+    st.write(
+        "Models included in this experiment:",
+        ", ".join(models.keys())
+    )
+
+    st.write(
+        "Each model is evaluated using both the original "
+        "and expanded feature sets."
+    )
+
+    st.info(
+        "This comparison uses chronological walk-forward "
+        "validation. Thresholds are selected using validation "
+        "data, and performance is measured on later test data."
+    )
+
+    # --------------------------------------------------
+    # 9. WALK-FORWARD VALIDATION
+    # --------------------------------------------------
+
+    with st.spinner(
+        "Training and evaluating models across chronological folds..."
+    ):
+
+        walk_forward = walk_forward_validation(X, y)
+
+    summary = walk_forward["summary"]
+    fold_results = walk_forward["fold_results"]
+    skipped_folds = walk_forward["skipped_folds"]
+
+    if summary.empty:
+        st.error(
+            "No models could be evaluated. "
+            "Check the available observations and class distribution."
+        )
+        st.stop()
+
+    # --------------------------------------------------
+    # 10. OVERALL RESULTS
+    # --------------------------------------------------
+
+    st.header("5. Overall Model Performance")
+
+    display_summary = summary.rename(columns={
+        "Average_Accuracy": "Average Accuracy",
+        "Average_Macro_F1": "Average Macro F1",
+        "Average_Balanced_Accuracy": "Average Balanced Accuracy",
+        "Average_ROC_AUC": "Average ROC-AUC",
+        "Average_Log_Loss": "Average Log Loss",
+        "Average_Baseline_Accuracy": "Average Baseline Accuracy",
+        "Average_Baseline_Macro_F1": "Average Baseline Macro F1"
+    })
+
+    st.dataframe(
+        display_summary.round(4),
+        use_container_width=True,
+        hide_index=True
+    )
+
+    st.caption(
+        "Higher Accuracy, Macro F1, Balanced Accuracy and ROC-AUC "
+        "are generally better. Lower Log Loss is better."
+    )
+
+    # --------------------------------------------------
+    # 11. FEATURE SET COMPARISON
+    # --------------------------------------------------
+
+    st.header("6. Original Features vs Expanded Features")
+
+    feature_comparison = summary.pivot(
+        index="Model",
+        columns="Feature Set",
+        values="Average Macro F1"
+    )
+
+    st.subheader("Macro F1 Comparison")
+
+    st.dataframe(
+        feature_comparison.round(4),
+        use_container_width=True
+    )
+
+    if (
+        "Original 7 features" in feature_comparison.columns
+        and "Expanded features" in feature_comparison.columns
+    ):
+
+        feature_comparison["Difference"] = (
+            feature_comparison["Expanded features"]
+            - feature_comparison["Original 7 features"]
         )
 
-        st.subheader("Walk-Forward Model vs Baseline")
+        st.subheader("Change in Macro F1")
 
-        if walk_forward["avg_accuracy"] > walk_forward["avg_baseline"]:
+        st.dataframe(
+            feature_comparison[["Difference"]].round(4),
+            use_container_width=True
+        )
 
-            st.success(
-                "Model outperforms the baseline on average."
-            )
+    # --------------------------------------------------
+    # 12. INDIVIDUAL FOLD RESULTS
+    # --------------------------------------------------
 
-        elif walk_forward["avg_accuracy"] == walk_forward["avg_baseline"]:
+    st.header("7. Individual Walk-Forward Results")
 
-            st.info(
-                "Model matches the baseline on average."
-            )
+    st.dataframe(
+        fold_results.round(4),
+        use_container_width=True,
+        hide_index=True
+    )
 
-        else:
+    # --------------------------------------------------
+    # 13. MODEL VS BASELINE
+    # --------------------------------------------------
 
-            st.warning(
-                "Model performs below the baseline on average."
-            )
+    st.header("8. Model vs Majority-Class Baseline")
+
+    baseline_comparison = summary[
+        [
+            "Feature Set",
+            "Model",
+            "Average_Accuracy",
+            "Average_Baseline_Accuracy",
+            "Average_Macro_F1",
+            "Average_Baseline_Macro_F1"
+        ]
+    ].copy()
+
+    baseline_comparison["Accuracy Difference"] = (
+        baseline_comparison["Average_Accuracy"]
+        - baseline_comparison["Average_Baseline_Accuracy"]
+    )
+
+    baseline_comparison["Macro F1 Difference"] = (
+        baseline_comparison["Average_Macro_F1"]
+        - baseline_comparison["Average_Baseline_Macro_F1"]
+    )
+
+    st.dataframe(
+        baseline_comparison.round(4),
+        use_container_width=True,
+        hide_index=True
+    )
+
+    # --------------------------------------------------
+    # 14. SKIPPED FOLDS
+    # --------------------------------------------------
+
+    st.header("9. Evaluation Warnings")
+
+    if not skipped_folds.empty:
+
+        st.warning(
+            "Some folds or model runs were skipped. "
+            "Review the reasons below."
+        )
+
+        st.dataframe(
+            skipped_folds,
+            use_container_width=True,
+            hide_index=True
+        )
 
     else:
 
-        st.warning(
-            "Not enough data to perform walk-forward validation."
-        )
+        st.success("No folds or model runs were skipped.")
+
+    # --------------------------------------------------
+    # 15. INTERPRETATION
+    # --------------------------------------------------
+
+    st.header("10. Initial Interpretation")
+
+    best_result = summary.iloc[0]
+
+    st.write(
+        f"Highest average Macro F1 in this experiment: "
+        f"**{best_result['Model']}** using "
+        f"**{best_result['Feature Set']}**."
+    )
+
+    st.write(
+        f"Average Macro F1: "
+        f"**{best_result['Average_Macro_F1']:.4f}**"
+    )
+
+    st.write(
+        f"Average accuracy: "
+        f"**{best_result['Average_Accuracy']:.2%}**"
+    )
+
+    st.warning(
+        "This is a historical classification experiment, not "
+        "evidence of a profitable trading strategy. We still need "
+        "a separate backtest with transaction costs, slippage, "
+        "and risk metrics."
+    )
+
+    # --------------------------------------------------
+    # 16. DOWNLOAD RESULTS
+    # --------------------------------------------------
+
+    st.header("11. Export Results")
+
+    st.download_button(
+        label="Download Model Comparison CSV",
+        data=summary.to_csv(index=False),
+        file_name=f"{stock}_model_comparison.csv",
+        mime="text/csv"
+    )
+
+    st.download_button(
+        label="Download Walk-Forward Fold Results CSV",
+        data=fold_results.to_csv(index=False),
+        file_name=f"{stock}_walk_forward_results.csv",
+        mime="text/csv"
+    )
+
+    st.success("Analysis completed.")
