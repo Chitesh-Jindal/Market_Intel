@@ -1,252 +1,184 @@
 
+import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression
 
+from sklearn.base import clone
 from sklearn.metrics import (
     accuracy_score,
-    confusion_matrix,
-    classification_report,
+    balanced_accuracy_score,
+    f1_score,
+    precision_score,
+    recall_score,
     roc_auc_score,
-    log_loss,
-    f1_score
+    log_loss
+)
+
+from ml_pipeline import (
+    get_models,
+    EXISTING_FEATURES,
+    ALL_FEATURES
 )
 
 
-# Main model evaluation
-def evaluate_model(results):
+# --------------------------------------------------
+# 1. CLASSIFICATION THRESHOLD SELECTION
+# --------------------------------------------------
 
-    # Retrieve data from ML pipeline
-    y_train = results["y_train"]
-    y_val = results["y_val"]
-    y_test = results["y_test"]
+THRESHOLDS = [0.40, 0.45, 0.50, 0.55, 0.60, 0.65]
 
-    y_train_prob = results["y_train_prob"]
-    y_val_prob = results["y_val_prob"]
-    y_test_prob = results["y_test_prob"]
 
-    # Threshold analysis using validation probabilities
-    thresholds = [0.40, 0.45, 0.50, 0.55, 0.60, 0.65]
+def select_threshold(y_true, probabilities):
+    """
+    Select the threshold that gives the best Macro F1
+    on validation data.
 
-    threshold_results = []
+    If multiple thresholds have the same Macro F1,
+    prefer the one closest to 0.50.
+    """
 
-    for threshold in thresholds:
+    best_threshold = 0.50
+    best_f1 = -1
 
-        predictions = (
-            y_val_prob >= threshold
-        ).astype(int)
+    for threshold in THRESHOLDS:
+        predictions = (probabilities >= threshold).astype(int)
 
-        threshold_results.append({
-            "Threshold": threshold,
+        score = f1_score(
+            y_true,
+            predictions,
+            average="macro",
+            zero_division=0
+        )
 
-            "Accuracy": accuracy_score(
-                y_val, predictions
-            ),
-
-            "Macro F1": f1_score(
-                y_val,
-                predictions,
-                labels=[0, 1],
-                average="macro",
-                zero_division=0
-            ),
-
-            "Positive Predictions (%)": (
-                predictions.mean() * 100
+        if (
+            score > best_f1
+            or (
+                score == best_f1
+                and abs(threshold - 0.50)
+                < abs(best_threshold - 0.50)
             )
-        })
+        ):
+            best_f1 = score
+            best_threshold = threshold
 
-    threshold_df = pd.DataFrame(threshold_results)
+    return best_threshold, best_f1
 
-    # Preserve the existing selected threshold
-    selected_threshold = 0.55
 
-    # Generate predictions
-    y_train_pred = (
-        y_train_prob >= selected_threshold
-    ).astype(int)
+# --------------------------------------------------
+# 2. MODEL EVALUATION
+# --------------------------------------------------
 
-    y_val_pred = (
-        y_val_prob >= selected_threshold
-    ).astype(int)
+def calculate_metrics(y_true, probabilities, threshold):
+    """
+    Calculate classification metrics for a set of
+    predicted probabilities and a selected threshold.
+    """
 
-    y_test_pred = (
-        y_test_prob >= selected_threshold
-    ).astype(int)
+    predictions = (probabilities >= threshold).astype(int)
 
-    # Validation prediction diagnostics
-    validation_results = pd.DataFrame({
-        "Actual Target": y_val,
-        "Predicted Probability": y_val_prob,
-        "Predicted Target": y_val_pred
-    })
+    metrics = {
+        "Accuracy": accuracy_score(y_true, predictions),
+        "Macro F1": f1_score(
+            y_true, predictions,
+            average="macro",
+            zero_division=0
+        ),
+        "Balanced Accuracy": balanced_accuracy_score(
+            y_true, predictions
+        ),
+        "Precision": precision_score(
+            y_true, predictions,
+            zero_division=0
+        ),
+        "Recall": recall_score(
+            y_true, predictions,
+            zero_division=0
+        )
+    }
 
-    # Validation accuracy
-    val_accuracy = accuracy_score(
-        y_val, y_val_pred
+    # ROC-AUC requires both classes to be present.
+    if len(np.unique(y_true)) == 2:
+        metrics["ROC-AUC"] = roc_auc_score(
+            y_true, probabilities
+        )
+    else:
+        metrics["ROC-AUC"] = np.nan
+
+    # Clip probabilities to avoid log(0).
+    clipped_probabilities = np.clip(
+        probabilities, 1e-7, 1 - 1e-7
     )
 
-    # Majority-class baseline from training data
-    val_baseline_class = y_train.value_counts().idxmax()
-
-    val_baseline_predictions = [
-        val_baseline_class
-    ] * len(y_val)
-
-    val_baseline_accuracy = accuracy_score(
-        y_val, val_baseline_predictions
+    metrics["Log Loss"] = log_loss(
+        y_true,
+        clipped_probabilities,
+        labels=[0, 1]
     )
 
-    # Validation confusion matrix
-    val_confusion_matrix = confusion_matrix(
-        y_val, y_val_pred, labels=[0, 1]
-    )
+    return metrics
 
-    # Class distributions
-    training_class_distribution = (
-        y_train.value_counts().sort_index().rename({
-            0: "Non-positive return (0)",
-            1: "Positive return (1)"
-        })
-    )
 
-    validation_class_distribution = (
-        y_val.value_counts().sort_index().rename({
-            0: "Non-positive return (0)",
-            1: "Positive return (1)"
-        })
-    )
+# --------------------------------------------------
+# 3. MAJORITY-CLASS BASELINE
+# --------------------------------------------------
 
-    # Validation probability metrics
-    val_auc = roc_auc_score(
-        y_val, y_val_prob
-    )
+def calculate_baseline(y_train, y_test):
+    """
+    Predict the most common class in the training data
+    for every observation in the test period.
+    """
 
-    val_log_loss = log_loss(
-        y_val, y_val_prob
-    )
+    majority_class = int(y_train.mode().iloc[0])
 
-    training_positive_rate = y_train.mean()
-
-    prior_probabilities = [
-        training_positive_rate
-    ] * len(y_val)
-
-    prior_log_loss = log_loss(
-        y_val, prior_probabilities
-    )
-
-    # Positive-return prediction rates
-    diagnostic_sets = [
-        ("Training", y_train, y_train_pred),
-        ("Validation", y_val, y_val_pred),
-        ("Test", y_test, y_test_pred)
-    ]
-
-    positive_return_rates = {}
-
-    for name, actual, predicted in diagnostic_sets:
-
-        positive_return_rates[name] = {
-            "Actual Positive-Return Rate (%)": (
-                actual.mean() * 100
-            ),
-
-            "Predicted Positive-Return Rate (%)": (
-                predicted.mean() * 100
-            )
-        }
-
-    # Predicted probability diagnostics
-    probability_sets = [
-        ("Training", y_train_prob),
-        ("Validation", y_val_prob),
-        ("Test", y_test_prob)
-    ]
-
-    probability_statistics = {}
-
-    for name, probabilities in probability_sets:
-
-        probability_statistics[name] = {
-            "Minimum": probabilities.min(),
-            "Maximum": probabilities.max(),
-            "Mean": probabilities.mean(),
-            "Standard deviation": probabilities.std()
-        }
-
-    # Test evaluation
-    test_accuracy = accuracy_score(
-        y_test, y_test_pred
-    )
-
-    test_confusion_matrix = confusion_matrix(
-        y_test, y_test_pred, labels=[0, 1]
-    )
-
-    # Detailed classification metrics
-    report = classification_report(
-        y_test,
-        y_test_pred,
-        labels=[0, 1],
-        target_names=["Non-positive", "Positive"],
-        output_dict=True,
-        zero_division=0
-    )
-
-    classification_metrics = (
-        pd.DataFrame(report).transpose()
-    )
-
-    # Majority-class baseline
-    majority_class = y_train.value_counts().idxmax()
-
-    baseline_predictions = [
+    predictions = np.full(
+        len(y_test),
         majority_class
-    ] * len(y_test)
-
-    baseline_accuracy = accuracy_score(
-        y_test, baseline_predictions
     )
 
-    # Return evaluation results
     return {
-        "selected_threshold": selected_threshold,
-
-        "threshold_df": threshold_df,
-
-        "y_train_pred": y_train_pred,
-        "y_val_pred": y_val_pred,
-        "y_test_pred": y_test_pred,
-
-        "validation_results": validation_results,
-
-        "val_accuracy": val_accuracy,
-        "val_baseline_class": val_baseline_class,
-        "val_baseline_accuracy": val_baseline_accuracy,
-        "val_confusion_matrix": val_confusion_matrix,
-
-        "training_class_distribution": training_class_distribution,
-        "validation_class_distribution": validation_class_distribution,
-
-        "val_auc": val_auc,
-        "val_log_loss": val_log_loss,
-        "prior_log_loss": prior_log_loss,
-
-        "positive_return_rates": positive_return_rates,
-        "probability_statistics": probability_statistics,
-
-        "test_accuracy": test_accuracy,
-        "test_confusion_matrix": test_confusion_matrix,
-        "classification_metrics": classification_metrics,
-
-        "majority_class": majority_class,
-        "baseline_accuracy": baseline_accuracy
+        "Baseline Accuracy": accuracy_score(
+            y_test, predictions
+        ),
+        "Baseline Macro F1": f1_score(
+            y_test,
+            predictions,
+            average="macro",
+            zero_division=0
+        )
     }
 
 
-# Walk-forward validation
-def walk_forward_validation(X, y):
+# --------------------------------------------------
+# 4. WALK-FORWARD VALIDATION
+# --------------------------------------------------
+
+def walk_forward_validation(X, y, feature_sets=None):
+    """
+    Compare multiple machine-learning models using
+    expanding-window walk-forward validation.
+
+    Each fold has:
+        - Expanding training period
+        - Validation period
+        - Unseen test period
+
+    The threshold is selected on validation data.
+    The selected threshold is then evaluated on test data.
+    """
+
+    if feature_sets is None:
+        feature_sets = {
+            "Original 7 features": EXISTING_FEATURES,
+            "Expanded features": ALL_FEATURES
+        }
+
+    X = X.copy()
+    y = y.copy()
+
+    if len(X) != len(y):
+        raise ValueError("X and y must have the same number of rows.")
+
+    if not X.index.equals(y.index):
+        raise ValueError("X and y must have matching indexes.")
 
     n = len(X)
 
@@ -254,184 +186,173 @@ def walk_forward_validation(X, y):
     validation_size = int(n * 0.10)
     test_size = int(n * 0.10)
 
-    thresholds = [0.40, 0.45, 0.50, 0.55, 0.60, 0.65]
+    if (
+        initial_train_size < 1
+        or validation_size < 1
+        or test_size < 1
+    ):
+        raise ValueError(
+            "Not enough observations for walk-forward validation."
+        )
 
-    walk_forward_results = []
+    models = get_models()
 
+    fold_results = []
+    skipped_folds = []
+
+    fold_number = 1
     train_end = initial_train_size
-    fold = 1
 
     while train_end + validation_size + test_size <= n:
 
-        # Chronological indices
-        val_start = train_end
-        val_end = val_start + validation_size
+        validation_start = train_end
+        validation_end = validation_start + validation_size
 
-        test_start = val_end
+        test_start = validation_end
         test_end = test_start + test_size
 
-        # Split the data
-        X_train_fold = X.iloc[:train_end]
-        X_val_fold = X.iloc[val_start:val_end]
-        X_test_fold = X.iloc[test_start:test_end]
+        X_train = X.iloc[:train_end]
+        y_train = y.iloc[:train_end]
 
-        y_train_fold = y.iloc[:train_end]
-        y_val_fold = y.iloc[val_start:val_end]
-        y_test_fold = y.iloc[test_start:test_end]
+        X_val = X.iloc[validation_start:validation_end]
+        y_val = y.iloc[validation_start:validation_end]
 
-        # Check whether validation and test contain both classes
-        if y_val_fold.nunique() < 2 or y_test_fold.nunique() < 2:
+        X_test = X.iloc[test_start:test_end]
+        y_test = y.iloc[test_start:test_end]
 
+        # Every model and feature set uses these same dates.
+        if (
+            y_train.nunique() < 2
+            or y_val.nunique() < 2
+            or y_test.nunique() < 2
+        ):
+            skipped_folds.append({
+                "Fold": fold_number,
+                "Reason": "Training, validation, or test period has only one class."
+            })
+
+            fold_number += 1
             train_end += test_size
-            fold += 1
             continue
 
-        # Ensure training data contains both classes
-        if y_train_fold.nunique() < 2:
+        for feature_set_name, feature_columns in feature_sets.items():
 
-            train_end += test_size
-            fold += 1
-            continue
+            missing_columns = [
+                column for column in feature_columns
+                if column not in X.columns
+            ]
 
-        # Scale using training data only
-        fold_scaler = StandardScaler()
-
-        X_train_fold_scaled = fold_scaler.fit_transform(
-            X_train_fold
-        )
-
-        X_val_fold_scaled = fold_scaler.transform(
-            X_val_fold
-        )
-
-        X_test_fold_scaled = fold_scaler.transform(
-            X_test_fold
-        )
-
-        # Train a fresh model
-        fold_model = LogisticRegression(max_iter=1000)
-
-        fold_model.fit(
-            X_train_fold_scaled,
-            y_train_fold
-        )
-
-        # Validation probabilities
-        val_prob = fold_model.predict_proba(
-            X_val_fold_scaled
-        )[:, 1]
-
-        # Select threshold using validation Macro F1
-        best_threshold = 0.50
-        best_val_f1 = -1
-
-        for threshold in thresholds:
-
-            val_predictions = (
-                val_prob >= threshold
-            ).astype(int)
-
-            val_f1 = f1_score(
-                y_val_fold,
-                val_predictions,
-                labels=[0, 1],
-                average="macro",
-                zero_division=0
-            )
-
-            if (
-                val_f1 > best_val_f1
-                or (
-                    val_f1 == best_val_f1
-                    and abs(threshold - 0.50)
-                    < abs(best_threshold - 0.50)
+            if missing_columns:
+                raise ValueError(
+                    f"Missing features for {feature_set_name}: "
+                    f"{missing_columns}"
                 )
-            ):
 
-                best_val_f1 = val_f1
-                best_threshold = threshold
+            X_train_features = X_train[feature_columns]
+            X_val_features = X_val[feature_columns]
+            X_test_features = X_test[feature_columns]
 
-        # Evaluate on unseen test data
-        test_prob = fold_model.predict_proba(
-            X_test_fold_scaled
-        )[:, 1]
+            for model_name, base_model in models.items():
 
-        test_predictions = (
-            test_prob >= best_threshold
-        ).astype(int)
+                try:
+                    # Create a fresh model for every fold.
+                    model = clone(base_model)
 
-        # Test accuracy
-        test_accuracy = accuracy_score(
-            y_test_fold,
-            test_predictions
-        )
+                    model.fit(
+                        X_train_features,
+                        y_train
+                    )
 
-        # Test Macro F1
-        test_f1 = f1_score(
-            y_test_fold,
-            test_predictions,
-            labels=[0, 1],
-            average="macro",
-            zero_division=0
-        )
+                    val_probabilities = model.predict_proba(
+                        X_val_features
+                    )[:, 1]
 
-        # Majority-class baseline
-        majority_class_fold = (
-            y_train_fold.value_counts().idxmax()
-        )
+                    test_probabilities = model.predict_proba(
+                        X_test_features
+                    )[:, 1]
 
-        baseline_predictions = [
-            majority_class_fold
-        ] * len(y_test_fold)
+                    # Select threshold using validation data only.
+                    selected_threshold, validation_macro_f1 = (
+                        select_threshold(
+                            y_val,
+                            val_probabilities
+                        )
+                    )
 
-        baseline_accuracy = accuracy_score(
-            y_test_fold,
-            baseline_predictions
-        )
+                    # Evaluate on the unseen test period.
+                    test_metrics = calculate_metrics(
+                        y_test,
+                        test_probabilities,
+                        selected_threshold
+                    )
 
-        # Save fold results
-        walk_forward_results.append({
-            "Fold": fold,
-            "Training Rows": len(X_train_fold),
-            "Validation Rows": len(X_val_fold),
-            "Testing Rows": len(X_test_fold),
-            "Test Start": str(X_test_fold.index[0])[:10],
-            "Test End": str(X_test_fold.index[-1])[:10],
-            "Selected Threshold": best_threshold,
-            "Test Accuracy": test_accuracy,
-            "Test Macro F1": test_f1,
-            "Baseline Accuracy": baseline_accuracy
-        })
+                    baseline_metrics = calculate_baseline(
+                        y_train,
+                        y_test
+                    )
 
-        # Move forward in time
+                    result = {
+                        "Fold": fold_number,
+                        "Feature Set": feature_set_name,
+                        "Model": model_name,
+                        "Training Rows": len(X_train),
+                        "Validation Rows": len(X_val),
+                        "Test Rows": len(X_test),
+                        "Selected Threshold": selected_threshold,
+                        "Validation Macro F1": validation_macro_f1
+                    }
+
+                    result.update(test_metrics)
+                    result.update(baseline_metrics)
+
+                    fold_results.append(result)
+
+                except Exception as error:
+                    skipped_folds.append({
+                        "Fold": fold_number,
+                        "Feature Set": feature_set_name,
+                        "Model": model_name,
+                        "Reason": str(error)
+                    })
+
+        fold_number += 1
+
+        # Expand training data by one test window.
         train_end += test_size
-        fold += 1
 
-    # Prepare results
-    if walk_forward_results:
-
-        walk_forward_df = pd.DataFrame(
-            walk_forward_results
-        )
-
-        avg_accuracy = walk_forward_df[
-            "Test Accuracy"
-        ].mean()
-
-        avg_f1 = walk_forward_df[
-            "Test Macro F1"
-        ].mean()
-
-        avg_baseline = walk_forward_df[
-            "Baseline Accuracy"
-        ].mean()
-
+    if not fold_results:
         return {
-            "results": walk_forward_df,
-            "avg_accuracy": avg_accuracy,
-            "avg_f1": avg_f1,
-            "avg_baseline": avg_baseline
+            "fold_results": pd.DataFrame(),
+            "summary": pd.DataFrame(),
+            "skipped_folds": pd.DataFrame(skipped_folds)
         }
 
-    return None
+    results_df = pd.DataFrame(fold_results)
 
+    # Aggregate performance across all successful folds.
+    summary_df = (
+        results_df
+        .groupby(["Feature Set", "Model"])
+        .agg(
+            Folds=("Fold", "count"),
+            Average_Accuracy=("Accuracy", "mean"),
+            Average_Macro_F1=("Macro F1", "mean"),
+            Average_Balanced_Accuracy=("Balanced Accuracy", "mean"),
+            Average_ROC_AUC=("ROC-AUC", "mean"),
+            Average_Log_Loss=("Log Loss", "mean"),
+            Average_Baseline_Accuracy=("Baseline Accuracy", "mean"),
+            Average_Baseline_Macro_F1=("Baseline Macro F1", "mean")
+        )
+        .reset_index()
+    )
+
+    summary_df = summary_df.sort_values(
+        by="Average_Macro_F1",
+        ascending=False
+    ).reset_index(drop=True)
+
+    return {
+        "fold_results": results_df,
+        "summary": summary_df,
+        "skipped_folds": pd.DataFrame(skipped_folds)
+    }
