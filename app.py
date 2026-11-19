@@ -1,252 +1,450 @@
 
-# ============================================================
-# MARKET INTEL
-# Indian Stock Intelligence & Analysis Platform
-# ============================================================
-
-
-# SECTION 1: IMPORTS AND CONFIGURATION
-
 import streamlit as st
-import yfinance as yf
 import pandas as pd
-import numpy as np
 
-from ta.momentum import RSIIndicator
+from data_loader import load_stock_data
+from technical_analysis import (
+    calculate_technical_indicators,
+    get_technical_signals
+)
+from ml_pipeline import (
+    prepare_ml_dataset,
+    train_model
+)
+from evaluation import (
+    evaluate_model,
+    walk_forward_validation
+)
 
 
-# Application configuration
+# --------------------------------------------------
+# 1. PAGE CONFIGURATION
+# --------------------------------------------------
+
 st.set_page_config(
     page_title="Market Intel",
     page_icon="📈",
     layout="wide"
 )
 
-APP_TITLE = "Market Intel"
-APP_SUBTITLE = "Indian Stock Intelligence"
+st.title("Market Intel")
+st.write("AI-Powered Indian Stock Intelligence")
 
-DEFAULT_STOCK = "RELIANCE.NS"
-DATA_PERIOD = "2y"
-DATA_INTERVAL = "1d"
-
-
-# ============================================================
-# SECTION 2: DATA COLLECTION
-# ============================================================
-
-@st.cache_data(ttl=3600)
-def load_stock_data(stock):
-
-    stock = stock.strip().upper()
-
-    if not stock:
-        raise ValueError("Please enter a stock symbol.")
-
-    data = yf.download(
-        stock,
-        period=DATA_PERIOD,
-        interval=DATA_INTERVAL,
-        auto_adjust=True,
-        progress=False,
-        threads=False
-    )
-
-    if data.empty:
-        raise ValueError(
-            "No stock data found. Check the stock symbol."
-        )
-
-    # Handle MultiIndex columns returned by yfinance
-    if isinstance(data.columns, pd.MultiIndex):
-
-        expected_columns = {
-            "Open", "High", "Low", "Close", "Volume"
-        }
-
-        for level in range(data.columns.nlevels):
-
-            level_values = set(
-                data.columns.get_level_values(level)
-            )
-
-            if expected_columns.issubset(level_values):
-                data.columns = data.columns.get_level_values(level)
-                break
-
-        else:
-            raise ValueError(
-                "Unexpected data format returned by yfinance."
-            )
-
-    return data
+stock = st.text_input(
+    "Enter stock symbol",
+    "RELIANCE.NS"
+)
 
 
-# ============================================================
-# SECTION 3: DATA PROCESSING
-# ============================================================
+# --------------------------------------------------
+# 2. DOWNLOAD HISTORICAL DATA
+# --------------------------------------------------
 
-def process_stock_data(data):
+if st.button("Analyze"):
 
+    if not stock.strip():
+        st.error("Please enter a valid stock symbol.")
+        st.stop()
+
+    with st.spinner("Downloading stock data..."):
+
+        data = load_stock_data(stock.strip())
+
+    if data is None:
+        st.error("No data found for this stock.")
+        st.stop()
+
+    # Work with a separate copy
     data = data.copy()
 
-    # Sort observations chronologically
-    data = data.sort_index()
+    st.success(f"Successfully loaded data for {stock.upper()}")
 
-    # Remove duplicate dates
-    data = data[~data.index.duplicated(keep="last")]
+    # --------------------------------------------------
+    # 3. HISTORICAL DATA
+    # --------------------------------------------------
 
-    # Convert numerical columns to numeric types
-    numeric_columns = [
-        "Open", "High", "Low", "Close", "Volume"
-    ]
+    st.subheader("Historical Data")
+    st.dataframe(data, use_container_width=True)
 
-    for column in numeric_columns:
-
-        if column in data.columns:
-            data[column] = pd.to_numeric(
-                data[column],
-                errors="coerce"
-            )
-
-    # Closing price is essential for our analysis
-    if "Close" not in data.columns:
-        raise ValueError("Closing price data is unavailable.")
-
-    # Remove observations with missing closing prices
-    data = data.dropna(subset=["Close"])
-
-    # Remove invalid closing prices
-    data = data[data["Close"] > 0]
-
-    if len(data) < 60:
-        raise ValueError(
-            "Insufficient historical data for analysis."
-        )
-
-    # Calculate daily returns
-    data["Daily_Return (%)"] = (
-        data["Close"].pct_change() * 100
-    )
-
-    return data
-
-
-# ============================================================
-# SECTION 4: TECHNICAL INDICATORS
-# ============================================================
-
-def calculate_indicators(data):
-
-    data = data.copy()
-
-    # Simple Moving Averages
-    data["SMA_10"] = (
-        data["Close"].rolling(window=10).mean()
-    )
-
-    data["SMA_20"] = (
-        data["Close"].rolling(window=20).mean()
-    )
-
-    # Exponential Moving Average
-    data["EMA_20"] = (
-        data["Close"].ewm(
-            span=20,
-            adjust=False,
-            min_periods=20
-        ).mean()
-    )
-
-    # Relative Strength Index
-    rsi_indicator = RSIIndicator(
-        close=data["Close"],
-        window=14
-    )
-
-    data["RSI_14"] = rsi_indicator.rsi()
-
-    return data
-
-
-# ============================================================
-# TEMPORARY MAIN EXECUTION
-# ============================================================
-
-def main():
-
-    st.title(APP_TITLE)
-    st.caption(APP_SUBTITLE)
+    st.write("Missing Values")
+    st.dataframe(data.isnull().sum().to_frame("Missing Values"))
 
     st.divider()
 
-    stock = st.text_input(
-        "Enter Indian stock symbol",
-        DEFAULT_STOCK
+    # --------------------------------------------------
+    # 4. KEY STATISTICS
+    # --------------------------------------------------
+
+    st.subheader(f"Analysis for {stock.upper()}")
+    st.caption("Key Statistics")
+
+    average_return = data["Daily_Return (%)"].mean()
+    volatility = data["Daily_Return (%)"].std()
+
+    highest_price = data["Close"].max()
+    lowest_price = data["Close"].min()
+    latest_price = data["Close"].iloc[-1]
+
+    price_range = highest_price - lowest_price
+
+    total_volume = data["Volume"].sum()
+    trading_days = len(data)
+
+    price_change = latest_price - data["Close"].iloc[0]
+
+    price_change_percent = (
+        price_change / data["Close"].iloc[0]
+    ) * 100
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric("Latest Closing Price", f"{latest_price:.2f}")
+    col2.metric("Price Change", f"{price_change:.2f}")
+    col3.metric("Price Change (%)", f"{price_change_percent:.2f}%")
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric("Highest Closing Price", f"{highest_price:.2f}")
+    col2.metric("Lowest Closing Price", f"{lowest_price:.2f}")
+    col3.metric("Closing Price Range", f"{price_range:.2f}")
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric("Average Daily Return", f"{average_return:.2f}%")
+    col2.metric("Daily Volatility", f"{volatility:.2f}%")
+    col3.metric("Trading Days", trading_days)
+
+    st.write("Total Trading Volume:", f"{total_volume:,.0f}")
+
+    st.divider()
+
+    # --------------------------------------------------
+    # 5. TECHNICAL ANALYSIS
+    # --------------------------------------------------
+
+    data = calculate_technical_indicators(data)
+
+    st.subheader("Price and Moving Averages")
+
+    st.line_chart(
+        data[["Close", "SMA_10", "SMA_20", "EMA_20"]]
     )
 
-    if st.button("Analyze Stock", type="primary"):
+    st.subheader("RSI (Relative Strength Index)")
+    st.line_chart(data["RSI"])
 
-        try:
+    st.subheader("MACD (Moving Average Convergence Divergence)")
+    st.line_chart(data[["MACD", "MACD_Signal"]])
 
-            with st.spinner("Fetching and analyzing stock data..."):
+    st.subheader("Bollinger Bands")
 
-                # Section 2
-                data = load_stock_data(stock)
+    st.line_chart(
+        data[["Close", "BB_Upper", "BB_Middle", "BB_Lower"]]
+    )
 
-                # Section 3
-                data = process_stock_data(data)
+    # Latest indicators
+    latest = data.iloc[-1]
 
-                # Section 4
-                data = calculate_indicators(data)
+    st.subheader("Latest Technical Indicators")
 
-            st.success("Stock data successfully analyzed!")
+    indicator_values = {
+        "SMA 10": latest["SMA_10"],
+        "SMA 20": latest["SMA_20"],
+        "EMA 20": latest["EMA_20"],
+        "RSI": latest["RSI"],
+        "MACD": latest["MACD"],
+        "MACD Signal": latest["MACD_Signal"],
+        "Bollinger Upper": latest["BB_Upper"],
+        "Bollinger Middle": latest["BB_Middle"],
+        "Bollinger Lower": latest["BB_Lower"]
+    }
 
-            # Latest stock information
-            latest = data.iloc[-1]
+    for name, value in indicator_values.items():
+        st.write(f"{name}: {value:.2f}")
 
-            col1, col2, col3 = st.columns(3)
+    # Technical signal summary
+    signals = get_technical_signals(data)
 
-            col1.metric(
-                "Latest Closing Price",
-                f"₹{latest['Close']:.2f}"
+    st.subheader("Technical Signal Summary")
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric("Trend", signals["Trend"])
+    col2.metric("Momentum", signals["Momentum"])
+    col3.metric("Volatility", signals["Volatility"])
+
+    st.divider()
+
+    # --------------------------------------------------
+    # 6. MACHINE LEARNING DATASET
+    # --------------------------------------------------
+
+    st.subheader("ML Dataset")
+
+    X, y, ml_data = prepare_ml_dataset(data)
+
+    st.write("ML Features")
+    st.dataframe(X, use_container_width=True)
+
+    st.subheader("ML Features and Target")
+
+    st.write("Features (X):")
+    st.dataframe(X, use_container_width=True)
+
+    st.write("Target (y):")
+    st.dataframe(y.to_frame(), use_container_width=True)
+
+    st.divider()
+
+    # --------------------------------------------------
+    # 7. TRAINING AND TESTING
+    # --------------------------------------------------
+
+    st.subheader("Training, Validation and Testing Data")
+
+    if len(X) < 30:
+        st.error("Insufficient data for the existing ML evaluation.")
+        st.stop()
+
+    results = train_model(X, y)
+
+    st.write("Training rows:", len(results["X_train"]))
+    st.write("Validation rows:", len(results["X_val"]))
+    st.write("Testing rows:", len(results["X_test"]))
+
+    # --------------------------------------------------
+    # 8. FEATURE DRIFT
+    # --------------------------------------------------
+
+    st.subheader("Model Diagnostics: Feature Drift")
+
+    st.dataframe(
+        results["drift_data"].round(4),
+        use_container_width=True
+    )
+
+    # --------------------------------------------------
+    # 9. MODEL COEFFICIENTS
+    # --------------------------------------------------
+
+    st.subheader("Model Diagnostics: Feature Coefficients")
+
+    st.write(
+        "Model Intercept:",
+        round(results["model_intercept"], 4)
+    )
+
+    st.dataframe(
+        results["coefficient_data"].round(4),
+        use_container_width=True
+    )
+
+    # --------------------------------------------------
+    # 10. FEATURE CONTRIBUTIONS
+    # --------------------------------------------------
+
+    st.subheader("Average Feature Contributions")
+
+    st.dataframe(
+        results["contribution_data"].round(4),
+        use_container_width=True
+    )
+
+    st.divider()
+
+    # --------------------------------------------------
+    # 11. MODEL EVALUATION
+    # --------------------------------------------------
+
+    st.subheader("Model Evaluation")
+
+    evaluation = evaluate_model(results)
+
+    # Threshold analysis
+    st.subheader("Validation Threshold Analysis")
+
+    st.dataframe(
+        evaluation["threshold_df"].round(4),
+        use_container_width=True
+    )
+
+    st.write(
+        "Selected Threshold:",
+        evaluation["selected_threshold"]
+    )
+
+    # Validation predictions
+    st.subheader("Validation Prediction Analysis")
+
+    st.dataframe(
+        evaluation["validation_results"].round(4),
+        use_container_width=True
+    )
+
+    # Validation evaluation
+    st.subheader("Validation Evaluation")
+
+    st.write(
+        "Validation Accuracy:",
+        f"{evaluation['val_accuracy'] * 100:.2f}%"
+    )
+
+    st.write(
+        "Baseline Prediction Class:",
+        evaluation["val_baseline_class"]
+    )
+
+    st.write(
+        "Validation Baseline Accuracy:",
+        f"{evaluation['val_baseline_accuracy'] * 100:.2f}%"
+    )
+
+    st.write("Validation Confusion Matrix:")
+    st.write(evaluation["val_confusion_matrix"])
+
+    # Class distributions
+    st.subheader("Class Distribution")
+
+    st.write("Training Set:")
+    st.write(evaluation["training_class_distribution"])
+
+    st.write("Validation Set:")
+    st.write(evaluation["validation_class_distribution"])
+
+    # Probability metrics
+    st.subheader("Model Diagnostics: Probability Metrics")
+
+    st.write("Validation ROC-AUC:", round(evaluation["val_auc"], 4))
+    st.write("Validation Log Loss:", round(evaluation["val_log_loss"], 4))
+    st.write("Prior-Only Baseline Log Loss:", round(evaluation["prior_log_loss"], 4))
+
+    # Positive-return rates
+    st.subheader("Model Diagnostics: Positive-Return Rates")
+
+    for name, rates in evaluation["positive_return_rates"].items():
+
+        st.write(name, rates)
+
+    # Probability statistics
+    st.subheader("Model Diagnostics: Predicted Probabilities")
+
+    for name, statistics in evaluation["probability_statistics"].items():
+
+        st.write(name, statistics)
+
+    # --------------------------------------------------
+    # 12. FINAL TEST EVALUATION
+    # --------------------------------------------------
+
+    st.subheader("Final Test Evaluation")
+
+    accuracy = evaluation["test_accuracy"]
+
+    st.metric(
+        "Test Accuracy",
+        f"{accuracy * 100:.2f}%"
+    )
+
+    st.write("Confusion Matrix:")
+    st.write(evaluation["test_confusion_matrix"])
+
+    st.subheader("Detailed Classification Metrics")
+
+    st.dataframe(
+        evaluation["classification_metrics"].round(3),
+        use_container_width=True
+    )
+
+    # Model versus baseline
+    st.subheader("Model vs Baseline")
+
+    col1, col2 = st.columns(2)
+
+    col1.metric(
+        "Logistic Regression Accuracy",
+        f"{accuracy:.2%}"
+    )
+
+    col2.metric(
+        "Majority-Class Baseline",
+        f"{evaluation['baseline_accuracy']:.2%}"
+    )
+
+    if accuracy > evaluation["baseline_accuracy"]:
+        st.success(
+            "The model outperforms the majority-class baseline."
+        )
+
+    elif accuracy == evaluation["baseline_accuracy"]:
+        st.info(
+            "The model matches the majority-class baseline."
+        )
+
+    else:
+        st.warning(
+            "The model performs below the majority-class baseline."
+        )
+
+    st.divider()
+
+    # --------------------------------------------------
+    # 13. WALK-FORWARD VALIDATION
+    # --------------------------------------------------
+
+    st.subheader("Walk-Forward Validation")
+
+    walk_forward = walk_forward_validation(X, y)
+
+    if walk_forward is not None:
+
+        st.subheader("Individual Fold Results")
+
+        st.dataframe(
+            walk_forward["results"].round(4),
+            use_container_width=True
+        )
+
+        st.subheader("Overall Walk-Forward Performance")
+
+        col1, col2, col3 = st.columns(3)
+
+        col1.metric(
+            "Average Test Accuracy",
+            f"{walk_forward['avg_accuracy']:.2%}"
+        )
+
+        col2.metric(
+            "Average Macro F1",
+            f"{walk_forward['avg_f1']:.3f}"
+        )
+
+        col3.metric(
+            "Average Baseline Accuracy",
+            f"{walk_forward['avg_baseline']:.2%}"
+        )
+
+        st.subheader("Walk-Forward Model vs Baseline")
+
+        if walk_forward["avg_accuracy"] > walk_forward["avg_baseline"]:
+
+            st.success(
+                "Model outperforms the baseline on average."
             )
 
-            col2.metric(
-                "Daily Return",
-                f"{latest['Daily_Return (%)']:.2f}%"
+        elif walk_forward["avg_accuracy"] == walk_forward["avg_baseline"]:
+
+            st.info(
+                "Model matches the baseline on average."
             )
 
-            col3.metric(
-                "RSI (14)",
-                f"{latest['RSI_14']:.2f}"
+        else:
+
+            st.warning(
+                "Model performs below the baseline on average."
             )
 
-            st.divider()
+    else:
 
-            # Historical price analysis
-            st.subheader("Historical Price Analysis")
-
-            st.line_chart(
-                data[["Close", "SMA_10", "SMA_20", "EMA_20"]]
-            )
-
-            # RSI analysis
-            st.subheader("Relative Strength Index")
-
-            st.line_chart(data["RSI_14"])
-
-            # Recent historical data
-            st.subheader("Recent Historical Data")
-
-            st.dataframe(
-                data.tail(10).round(2),
-                use_container_width=True
-            )
-
-        except Exception as error:
-
-            st.error(f"Analysis failed: {error}")
-
-
-if __name__ == "__main__":
-    main()
+        st.warning(
+            "Not enough data to perform walk-forward validation."
+        )
