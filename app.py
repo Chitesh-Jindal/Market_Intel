@@ -335,7 +335,7 @@ if analyze:
     feature_comparison = summary.pivot(
         index="Model",
         columns="Feature Set",
-        values="Average Macro F1"
+        values="Average_Macro_F1"
     )
 
     st.subheader("Macro F1 Comparison")
