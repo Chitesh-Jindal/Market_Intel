@@ -154,6 +154,16 @@ python validate_project.py
 
 This check generates deterministic synthetic OHLCV data and exercises indicators, feature construction, model selection, holdout metrics, walk-forward evaluation, feature importance and backtesting. It checks software integration; synthetic results are **not** evidence of stock-market predictive performance.
 
+### Reproduce the offline five-stock benchmark
+
+The original benchmark ZIP is not committed to the repository. If you have the supplied OHLCV CSV archive locally, run:
+
+\`\`\`bash
+python -m scripts.benchmark_validation --input /path/to/benchmark_data.zip --output benchmark_output
+\`\`\`
+
+The script writes holdout, walk-forward and backtest CSV files to the selected output directory. This is an offline reproduction workflow and does not download market data.
+
 ---
 
 ## Methodology

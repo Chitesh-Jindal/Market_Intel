@@ -1,7 +1,7 @@
 """Reproduce the five-stock offline benchmark from benchmark_data.zip.
 
 Usage:
-    python benchmark_validation.py --input benchmark_data.zip
+    python -m scripts.benchmark_validation --input /path/to/benchmark_data.zip
 
 The script does not download data. It uses the OHLCV CSVs exported from Yahoo
 Finance and included in the supplied benchmark archive.
