@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# Local benchmark exports and generated output
+benchmark_data.zip
+benchmark_output/
+benchmark_results/
+
+# OS / editor files
+.DS_Store
+.idea/
+.vscode/
