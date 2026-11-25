@@ -1,7 +1,7 @@
 """Reproduce the five-stock offline benchmark from benchmark_data.zip.
 
 Usage:
-    python benchmark_validation.py --input benchmark_data.zip
+    python -m scripts.benchmark_validation --input /path/to/benchmark_data.zip
 
 The script does not download data. It uses the OHLCV CSVs exported from Yahoo
 Finance and included in the supplied benchmark archive.
@@ -14,10 +14,10 @@ from pathlib import Path
 
 import pandas as pd
 
-from technical_analysis import calculate_technical_indicators
-from ml_pipeline import build_ml_dataset, train_and_evaluate, walk_forward_evaluate
-from evaluation import evaluate_test
-from backtesting import run_backtest
+from market_intel.technical_analysis import calculate_technical_indicators
+from market_intel.ml_pipeline import build_ml_dataset, train_and_evaluate, walk_forward_evaluate
+from market_intel.evaluation import evaluate_test
+from market_intel.backtesting import run_backtest
 from threadpoolctl import threadpool_limits
 
 
