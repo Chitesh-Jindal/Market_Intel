@@ -1,15 +1,31 @@
-# Market Intel — Validated final release
+# Market Intel — AI-Powered Indian Stock Intelligence
 
-The complete one-day Market Intel project is packaged in [Market_Intel_1D_Final_Validated.zip](./Market_Intel_1D_Final_Validated.zip).
+A Streamlit research application for next-trading-day direction analysis of Indian equities.
 
-Extract the ZIP, create a virtual environment, install requirements, and run:
+## Final validated version
+
+The final one-day release is maintained in the `final-release/` folder. See its README for setup, methodology, and limitations.
+
+## Quick start
 
 ```bash
+cd final-release
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 python validate_project.py
 streamlit run app.py
 ```
 
-See the included AUDIT_RESULTS.md and LAB_EVALUATION_GUIDE.md for methodology, benchmark results, limitations, and presentation notes. Predictive performance was weak and no reliable edge was established; the app uses a conservative HOLD gate when historical evidence is insufficient.
+## Scope
+
+- Daily OHLCV data and technical feature engineering
+- One-day positive/non-positive return classification
+- Logistic Regression, Random Forest, Gradient Boosting, and HistGradientBoosting
+- Chronological validation, holdout evaluation, and walk-forward testing
+- Conservative BUY/HOLD/SELL-Avoid action gate
+- Next-session executable backtesting
+
+## Research limitation
+
+The supplied five-stock benchmark did not establish a reliable predictive edge over baseline. The project reports that limitation and defaults to HOLD when its historical reliability checks are not met. It is an educational research prototype, not investment advice.
