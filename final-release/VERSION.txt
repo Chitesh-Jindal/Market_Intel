@@ -1,0 +1,4 @@
+Market Intel — Validated 1-Day Release
+Release date: 2026-11-25
+Prediction horizon: next trading session only
+Benchmark: five NSE equities, four expanding walk-forward folds per stock
